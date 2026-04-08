@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text.RegularExpressions;
 using Microsoft.Data.Sqlite;
 
 namespace LootMaster.Services;
@@ -156,6 +158,92 @@ public sealed class DbSyncService(string dbPath)
         }, ct);
     }
 
+    public record ImportResult(int Inserted, int Replaced, int Updated, int Other);
+
+    /// <summary>
+    /// Executes all non-empty, non-comment SQL statements from a file in a single transaction.
+    /// Returns counts of INSERT / UPDATE / other statements.
+    /// </summary>
+    public async Task<ImportResult> ImportSqlFileAsync(
+        string filePath,
+        IProgress<string>? progress = null,
+        CancellationToken ct = default)
+    {
+        var lines = await File.ReadAllLinesAsync(filePath, ct);
+
+        // Collect full statements (join lines, split on ';')
+        var statements = new List<string>();
+        var current = new System.Text.StringBuilder();
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("--") || trimmed.Length == 0) continue;
+            current.Append(' ').Append(trimmed);
+            if (trimmed.EndsWith(';'))
+            {
+                statements.Add(current.ToString().Trim());
+                current.Clear();
+            }
+        }
+
+        return await Task.Run(() =>
+        {
+            using var conn = OpenConnection(readOnly: false);
+            using var tx = conn.BeginTransaction();
+            int inserted = 0, replaced = 0, updated = 0, other = 0;
+            int done = 0;
+            foreach (var rawSql in statements)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var parsed = ParseInsert(rawSql);
+                if (parsed is not null)
+                {
+                    var (table, cols, vals) = parsed.Value;
+                    int idIdx = Array.FindIndex(cols, c => c.Equals("id", StringComparison.OrdinalIgnoreCase));
+                    string idVal = idIdx >= 0 ? vals[idIdx] : null!;
+
+                    bool exists = idVal != null && RowExistsById(conn, tx, table, idVal);
+                    if (!exists)
+                    {
+                        using var cmd = conn.CreateCommand();
+                        cmd.Transaction = tx;
+                        cmd.CommandText = rawSql;
+                        cmd.ExecuteNonQuery();
+                        inserted++;
+                    }
+                    else
+                    {
+                        // UPDATE без удаления — оригинальный id сохраняется
+                        var setClauses = cols
+                            .Select((c, i) => i != idIdx ? $"\"{c}\" = {vals[i]}" : null)
+                            .Where(x => x != null);
+                        using var cmd = conn.CreateCommand();
+                        cmd.Transaction = tx;
+                        cmd.CommandText = $"UPDATE \"{table}\" SET {string.Join(", ", setClauses)} WHERE id = {idVal}";
+                        cmd.ExecuteNonQuery();
+                        replaced++;
+                    }
+                }
+                else
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.Transaction = tx;
+                    cmd.CommandText = rawSql;
+                    cmd.ExecuteNonQuery();
+                    if (rawSql.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase)) updated++;
+                    else other++;
+                }
+
+                done++;
+                if (done % 100 == 0)
+                    progress?.Report($"Импорт SQL… {done}/{statements.Count}");
+            }
+            tx.Commit();
+            return new ImportResult(inserted, replaced, updated, other);
+        }, ct);
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
@@ -202,6 +290,51 @@ public sealed class DbSyncService(string dbPath)
         cmd.Parameters.AddWithValue("@p", packId);
         cmd.Parameters.AddWithValue("@g", groupNo);
         return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+    }
+
+    private static bool RowExistsById(SqliteConnection conn, SqliteTransaction tx, string table, string idVal)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = $"SELECT COUNT(*) FROM \"{table}\" WHERE id = {idVal}";
+        return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+    }
+
+    private static readonly Regex _insertRx = new(
+        @"INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+    /// <summary>Parses INSERT INTO table (cols) VALUES (vals) → (table, cols[], vals[]).</summary>
+    private static (string table, string[] cols, string[] vals)? ParseInsert(string sql)
+    {
+        var m = _insertRx.Match(sql);
+        if (!m.Success) return null;
+
+        string table = m.Groups[1].Value;
+        string[] cols = m.Groups[2].Value
+            .Split(',')
+            .Select(c => c.Trim().Trim('"').Trim('\''))
+            .ToArray();
+        string[] vals = SplitSqlValues(m.Groups[3].Value);
+        if (cols.Length != vals.Length) return null;
+        return (table, cols, vals);
+    }
+
+    /// <summary>Splits SQL VALUES list respecting single-quoted strings.</summary>
+    private static string[] SplitSqlValues(string valuesStr)
+    {
+        var result = new List<string>();
+        var current = new System.Text.StringBuilder();
+        bool inQuote = false;
+        foreach (char c in valuesStr)
+        {
+            if (c == '\'' && !inQuote) { inQuote = true; current.Append(c); }
+            else if (c == '\'' && inQuote) { inQuote = false; current.Append(c); }
+            else if (c == ',' && !inQuote) { result.Add(current.ToString().Trim()); current.Clear(); }
+            else current.Append(c);
+        }
+        if (current.Length > 0) result.Add(current.ToString().Trim());
+        return [.. result];
     }
 
     private static int GetMaxId(SqliteConnection conn, string table, SqliteTransaction? tx = null)

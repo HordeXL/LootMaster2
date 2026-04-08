@@ -82,9 +82,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SaveProgressCommand = new RelayCommand(async () => await SaveProgressAsync());
         ExportCommand = new RelayCommand(async () => await ExportAsync(), () => _allRows.Count > 0);
         SyncDbCommand = new RelayCommand(async () => await SyncDbAsync(), () => _allRows.Count > 0);
+        ImportSqlCommand = new RelayCommand(async () => await ImportSqlAsync(), () => !string.IsNullOrEmpty(_progress.DbPath));
         ApplyItemCommand = new RelayCommand(ApplyItemSettings, () => _selectedItem is not null);
         ClearItemCommand = new RelayCommand(ClearItemSettings, () => _selectedItem is not null);
         ApplyAllFromDbCommand = new RelayCommand(ApplyAllFromDb, () => _allRows.Any(r => r.DbGroup.HasValue && r.DbChance.HasValue));
+        ShowGroupHelpCommand = new RelayCommand(ShowGroupHelp);
         ApplyCategoryCommand = new RelayCommand(ApplyCategorySettings, () => _selectedItem is not null);
         ClearCategoryCommand = new RelayCommand(ClearCategorySettings, () => _selectedItem is not null);
         PrevCommand = new RelayCommand(SelectPrev);
@@ -104,9 +106,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand SaveProgressCommand { get; }
     public ICommand ExportCommand { get; }
     public ICommand SyncDbCommand { get; }
+    public ICommand ImportSqlCommand { get; }
     public ICommand ApplyItemCommand { get; }
     public ICommand ClearItemCommand { get; }
     public ICommand ApplyAllFromDbCommand { get; }
+    public ICommand ShowGroupHelpCommand { get; }
     public ICommand ApplyCategoryCommand { get; }
     public ICommand ClearCategoryCommand { get; }
     public ICommand PrevCommand { get; }
@@ -489,6 +493,48 @@ public sealed class MainViewModel : INotifyPropertyChanged
         StatusText = $"Применено значений из БД: {candidates.Count}";
     }
 
+    private static void ShowGroupHelp()
+    {
+        MessageBox.Show(
+            """
+            КАК РАБОТАЮТ ГРУППЫ (group) В ТАБЛИЦЕ loots
+            ═══════════════════════════════════════════
+
+            ГРУППА 0 — индивидуальный дроп
+            ──────────────────────────────
+            Каждый предмет из группы 0 проверяется
+            НЕЗАВИСИМО. Шанс выпадения = drop_rate
+            предмета. Могут выпасть несколько или
+            все предметы одновременно.
+
+            Пример: 3 предмета с 50% → каждый
+            проверяется отдельно, могут выпасть все.
+
+            ГРУППА 1, 2, 3... — групповой дроп
+            ────────────────────────────────────
+            1. Сначала бросается кубик против
+               loot_groups.drop_rate этой группы.
+               Если провал → вся группа пропускается.
+
+            2. Если группа сыграла → выбирается
+               ОДИН предмет из группы (по весу
+               drop_rate каждого предмета).
+
+            Пример (скриншот): 3 предмета с 33% в
+            одной группе → выпадет ровно 1 из 3.
+
+            ═══════════════════════════════════════════
+            ИТОГ:
+              group=0  → несколько предметов, у каждого
+                         свой независимый шанс
+              group=1+ → из группы выпадает max 1 предмет,
+                         шансы — это веса при выборе
+            """,
+            "Справка: группы лута",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
     private void ApplyCategorySettings()
     {
         if (_selectedItem is null) return;
@@ -681,6 +727,53 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             MessageBox.Show($"Ошибка записи в БД:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = "Ошибка записи в БД.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ImportSqlAsync()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = "Выбери SQL файл для импорта",
+            Filter = "SQL files (*.sql)|*.sql|All files (*.*)|*.*",
+            Multiselect = false,
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        var confirm = MessageBox.Show(
+            $"Выполнить все SQL-инструкции из файла:\n{dlg.FileName}\n\nЭто изменит базу данных. Продолжить?",
+            "Импорт SQL", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        IsLoading = true;
+        StatusText = "Импорт SQL…";
+        try
+        {
+            var svc = new DbSyncService(_progress.DbPath);
+            var progress = new Progress<string>(msg => StatusText = msg);
+            var result = await svc.ImportSqlFileAsync(dlg.FileName, progress);
+            int updated = result.Replaced + result.Updated;
+            int total = result.Inserted + updated + result.Other;
+            StatusText = $"Импорт завершён. Добавлено: {result.Inserted}, обновлено: {updated}";
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Импорт завершён успешно.");
+            sb.AppendLine();
+            sb.AppendLine($"Добавлено:        {result.Inserted}");
+            sb.AppendLine($"Обновлено:        {updated}");
+            if (result.Other > 0)
+                sb.AppendLine($"Прочих:           {result.Other}");
+            sb.AppendLine($"Итого:            {total}");
+            MessageBox.Show(sb.ToString(), "Импорт SQL", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка импорта SQL:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText = "Ошибка импорта SQL.";
         }
         finally
         {

@@ -31,6 +31,7 @@
                 <Button Content="Сохранить прогресс"   Command="{Binding SaveProgressCommand}"  Style="{StaticResource ToolbarButton}"/>
                 <Button Content="Экспорт результата"   Command="{Binding ExportCommand}"        Style="{StaticResource ToolbarButton}"/>
                 <Button Content="Записать в БД"        Command="{Binding SyncDbCommand}"        Style="{StaticResource ToolbarButton}"/>
+                <Button Content="Импорт SQL в БД"      Command="{Binding ImportSqlCommand}"     Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
                 <TextBlock Text="Поиск:" VerticalAlignment="Center" Margin="4,0"/>
                 <TextBox   Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -169,7 +170,15 @@
                     </GroupBox>
 
                     <!-- Item settings -->
-                    <GroupBox Header="Настройки предмета" Style="{StaticResource SectionFrame}">
+                    <GroupBox Style="{StaticResource SectionFrame}">
+                        <GroupBox.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Настройки предмета" VerticalAlignment="Center"/>
+                                <Button Content="?" Command="{Binding ShowGroupHelpCommand}"
+                                        Width="18" Height="18" Margin="6,0,0,0" Padding="0"
+                                        FontSize="11" FontWeight="Bold"
+                                        ToolTip="Справка по группам лута"/></StackPanel>
+                        </GroupBox.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
