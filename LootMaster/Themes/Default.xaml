@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Row highlight colors -->
+    <SolidColorBrush x:Key="RowDoneBrush" Color="#E6FFE6"/>
+    <SolidColorBrush x:Key="RowCategoryBrush" Color="#FFF7CC"/>
+    <SolidColorBrush x:Key="RowDefaultBrush" Color="Transparent"/>
+
+    <!-- Toolbar button style -->
+    <Style x:Key="ToolbarButton" TargetType="Button">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="Margin" Value="3,0"/>
+        <Setter Property="MinWidth" Value="100"/>
+    </Style>
+
+    <!-- Selection colors (active and inactive) -->
+    <SolidColorBrush x:Key="RowSelectedBrush"         Color="#3399FF"/>
+    <SolidColorBrush x:Key="RowSelectedInactiveBrush" Color="#3399FF"/>
+    <SolidColorBrush x:Key="RowSelectedForeground"    Color="White"/>
+
+    <!-- DataGrid row style with highlight -->
+    <Style x:Key="ItemRowStyle" TargetType="DataGridRow">
+        <Setter Property="Background" Value="{StaticResource RowDefaultBrush}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding HighlightState}" Value="Done">
+                <Setter Property="Background" Value="{StaticResource RowDoneBrush}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding HighlightState}" Value="Category">
+                <Setter Property="Background" Value="{StaticResource RowCategoryBrush}"/>
+            </DataTrigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource RowSelectedBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource RowSelectedForeground}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Section label frame style -->
+    <Style x:Key="SectionFrame" TargetType="GroupBox">
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Margin" Value="0,4"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+</ResourceDictionary>
