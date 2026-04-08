@@ -159,7 +159,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     // Summary text shown in the summary panel
     private string _summaryText = "";
-    private readonly List<(string File, int Inserted, int Updated, DateTime At)> _sqlImports = [];
+    private readonly List<(int Inserted, int Updated)> _sqlImports = [];
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -776,7 +776,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             int updated = result.Replaced + result.Updated;
             int total = result.Inserted + updated + result.Other;
             StatusText = $"Импорт завершён. Добавлено: {result.Inserted}, обновлено: {updated}";
-            _sqlImports.Add((Path.GetFileName(dlg.FileName), result.Inserted, updated, DateTime.Now));
+            _sqlImports.Add((result.Inserted, updated));
             RefreshSummary();
 
             var sb = new System.Text.StringBuilder();
@@ -827,11 +827,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             sb.AppendLine();
             sb.AppendLine("── Импорт SQL ──────────────────");
-            foreach (var (file, ins, upd, at) in _sqlImports)
-                sb.AppendLine($"{at:HH:mm:ss}  +{ins} ~{upd}  {file}");
             int totalIns = _sqlImports.Sum(x => x.Inserted);
             int totalUpd = _sqlImports.Sum(x => x.Updated);
-            sb.AppendLine($"Итого: добавлено {totalIns}, обновлено {totalUpd}");
+            sb.AppendLine($"Добавлено:  {totalIns}");
+            sb.AppendLine($"Обновлено:  {totalUpd}");
+            sb.AppendLine($"Итого:      {totalIns + totalUpd}");
         }
 
         SummaryText = sb.ToString().TrimEnd();
