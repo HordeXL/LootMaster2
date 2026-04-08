@@ -159,6 +159,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     // Summary text shown in the summary panel
     private string _summaryText = "";
+    private readonly List<(string File, int Inserted, int Updated, DateTime At)> _sqlImports = [];
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -775,6 +776,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             int updated = result.Replaced + result.Updated;
             int total = result.Inserted + updated + result.Other;
             StatusText = $"Импорт завершён. Добавлено: {result.Inserted}, обновлено: {updated}";
+            _sqlImports.Add((Path.GetFileName(dlg.FileName), result.Inserted, updated, DateTime.Now));
+            RefreshSummary();
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("Импорт завершён успешно.");
@@ -813,12 +816,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (row.EffectiveChance.HasValue) withChance++;
         }
 
-        SummaryText =
-            $"Всего предметов: {total}\n" +
-            $"Обработано: {done}\n" +
-            $"  напрямую: {itemDone}\n" +
-            $"  через категорию: {catDone}\n" +
-            $"С итоговым шансом: {withChance}";
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Всего предметов:    {total}");
+        sb.AppendLine($"Обработано:         {done}");
+        sb.AppendLine($"  напрямую:         {itemDone}");
+        sb.AppendLine($"  через категорию:  {catDone}");
+        sb.AppendLine($"С итоговым шансом:  {withChance}");
+
+        if (_sqlImports.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("── Импорт SQL ──────────────────");
+            foreach (var (file, ins, upd, at) in _sqlImports)
+                sb.AppendLine($"{at:HH:mm:ss}  +{ins} ~{upd}  {file}");
+            int totalIns = _sqlImports.Sum(x => x.Inserted);
+            int totalUpd = _sqlImports.Sum(x => x.Updated);
+            sb.AppendLine($"Итого: добавлено {totalIns}, обновлено {totalUpd}");
+        }
+
+        SummaryText = sb.ToString().TrimEnd();
     }
 
     // ──────────────────────────────────────────────────────────────────────────
