@@ -18,9 +18,9 @@ public static class JsonSourceParser
 
     public static async Task<ParseResult> ParseAsync(IEnumerable<string> paths)
     {
-        var itemToNpcs = new Dictionary<int, HashSet<int>>();
-        var npcToItems = new Dictionary<int, HashSet<int>>();
-        var skipped = new List<string>();
+        Dictionary<int, HashSet<int>> itemToNpcs = [];
+        Dictionary<int, HashSet<int>> npcToItems = [];
+        List<string> skipped = [];
 
         foreach (var path in paths)
         {
@@ -41,7 +41,7 @@ public static class JsonSourceParser
                 if (!entry.TryGetProperty("items", out var itemsProp) ||
                     itemsProp.ValueKind != JsonValueKind.Array) continue;
 
-                npcToItems.TryAdd(npcId, new HashSet<int>());
+                npcToItems.TryAdd(npcId, []);
 
                 foreach (var item in itemsProp.EnumerateArray())
                 {
@@ -49,7 +49,7 @@ public static class JsonSourceParser
                     int itemId = itemProp.GetInt32();
 
                     itemToNpcs.TryGetValue(itemId, out var npcSet);
-                    if (npcSet is null) { npcSet = new HashSet<int>(); itemToNpcs[itemId] = npcSet; }
+                    if (npcSet is null) { npcSet = []; itemToNpcs[itemId] = npcSet; }
                     npcSet.Add(npcId);
                     npcToItems[npcId].Add(itemId);
                 }

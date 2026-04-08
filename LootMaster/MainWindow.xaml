@@ -103,6 +103,10 @@
                       GridLinesVisibility="Horizontal"
                       AlternatingRowBackground="#F8F8F8"
                       FontSize="12">
+                <DataGrid.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"     Color="#3399FF"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
+                </DataGrid.Resources>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Item ID"         Binding="{Binding ItemId}"       Width="80"  CanUserSort="True"/>
                     <DataGridTextColumn Header="Предмет"         Binding="{Binding ItemName}"     Width="200" CanUserSort="True"/>
@@ -139,7 +143,7 @@
                 <StackPanel Margin="6">
 
                     <!-- Info box -->
-                    <GroupBox Header="Выбранный предмет" Style="{StaticResource SectionFrame}">
+                    <GroupBox Header="Выбранный предмет" Style="{StaticResource SectionFrame}" Height="160">
                         <StackPanel>
                             <TextBlock FontFamily="Consolas" FontSize="11" TextWrapping="Wrap">
                                 <TextBlock.Text>
@@ -152,7 +156,7 @@
                                 </TextBlock.Text>
                             </TextBlock>
                             <TextBlock FontFamily="Consolas" FontSize="11" Text="NPC:" Margin="0,4,0,2"/>
-                            <ScrollViewer MaxHeight="70" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <TextBlock FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"
                                            Text="{Binding SelectedItem.NpcNamesText, FallbackValue='—'}"/>
                             </ScrollViewer>
@@ -242,13 +246,13 @@
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Text="NPC, с которых падает предмет:" Margin="0,0,0,4"/>
-                            <ListBox   Grid.Row="1"
+                            <ListBox   x:Name="NpcListBox" Grid.Row="1"
                                        ItemsSource="{Binding NpcListItems}"
                                        SelectedItem="{Binding SelectedNpcText, Mode=TwoWay}"
                                        ScrollViewer.VerticalScrollBarVisibility="Auto"/>
 
                             <TextBlock Grid.Row="3" Text="Все предметы выбранного NPC:" Margin="0,4,0,4"/>
-                            <DataGrid  Grid.Row="4"
+                            <DataGrid  x:Name="NpcDetailGrid" Grid.Row="4"
                                        ItemsSource="{Binding NpcDetailItems}"
                                        SelectedItem="{Binding SelectedNpcDetailItem, Mode=TwoWay}"
                                        AutoGenerateColumns="False"
@@ -268,9 +272,6 @@
                                         </Style.Triggers>
                                     </Style>
                                 </DataGrid.RowStyle>
-                                <DataGrid.InputBindings>
-                                    <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DataContext.JumpToNpcItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                </DataGrid.InputBindings>
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Item ID"  Binding="{Binding ItemId}"          Width="75"/>
                                     <DataGridTextColumn Header="Предмет"  Binding="{Binding ItemName}"        Width="*"/>

@@ -515,7 +515,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (SelectedNpcDetailItem is null) return;
         var target = _allRows.FirstOrDefault(r => r.ItemId == SelectedNpcDetailItem.ItemId);
         if (target is null) return;
+
+        // Clear filters so the target row is visible
+        SearchText = "";
+        OnlyUnprocessed = false;
+
         SelectedItem = target;
+
+        // Defer scroll until after ItemsView.Refresh() is processed by the UI
+        Application.Current.Dispatcher.InvokeAsync(
+            () => ScrollIntoViewRequested?.Invoke(target),
+            System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private NpcItemRow? _selectedNpcDetailItem;
@@ -564,7 +574,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            await _progressSvc.ExportAsync(dlg.FileName, items);
+            await ProgressService.ExportAsync(dlg.FileName, items);
             StatusText = $"Экспорт сохранён: {dlg.FileName}";
         }
         catch (Exception ex)

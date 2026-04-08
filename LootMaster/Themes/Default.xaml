@@ -13,11 +13,6 @@
         <Setter Property="MinWidth" Value="100"/>
     </Style>
 
-    <!-- Selection colors (active and inactive) -->
-    <SolidColorBrush x:Key="RowSelectedBrush"         Color="#3399FF"/>
-    <SolidColorBrush x:Key="RowSelectedInactiveBrush" Color="#3399FF"/>
-    <SolidColorBrush x:Key="RowSelectedForeground"    Color="White"/>
-
     <!-- DataGrid row style with highlight -->
     <Style x:Key="ItemRowStyle" TargetType="DataGridRow">
         <Setter Property="Background" Value="{StaticResource RowDefaultBrush}"/>
@@ -28,10 +23,6 @@
             <DataTrigger Binding="{Binding HighlightState}" Value="Category">
                 <Setter Property="Background" Value="{StaticResource RowCategoryBrush}"/>
             </DataTrigger>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{StaticResource RowSelectedBrush}"/>
-                <Setter Property="Foreground" Value="{StaticResource RowSelectedForeground}"/>
-            </Trigger>
         </Style.Triggers>
     </Style>
 
