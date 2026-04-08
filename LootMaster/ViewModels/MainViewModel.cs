@@ -160,7 +160,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     // Summary text shown in the summary panel
     private string _summaryLeft = "";
     private string _summaryRight = "";
-    private readonly List<(int Inserted, int Updated)> _sqlImports = [];
+    // key = filename, value = cumulative totals for that file
+    private readonly Dictionary<string, (int Inserted, int Updated)> _sqlImports = [];
     public string SummaryLeft  { get => _summaryLeft;  private set => Set(ref _summaryLeft,  value); }
     public string SummaryRight { get => _summaryRight; private set => Set(ref _summaryRight, value); }
 
@@ -778,7 +779,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             int updated = result.Replaced + result.Updated;
             int total = result.Inserted + updated + result.Other;
             StatusText = $"Импорт завершён. Добавлено: {result.Inserted}, обновлено: {updated}";
-            _sqlImports.Add((result.Inserted, updated));
+            string fileName = Path.GetFileName(dlg.FileName);
+            _sqlImports[fileName] = (result.Inserted, updated);
             RefreshSummary();
 
             var sb = new System.Text.StringBuilder();
@@ -825,8 +827,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             $"  через категорию: {catDone}\n" +
             $"С итоговым шансом: {withChance}";
 
-        int totalIns = _sqlImports.Sum(x => x.Inserted);
-        int totalUpd = _sqlImports.Sum(x => x.Updated);
+        int totalIns = _sqlImports.Values.Sum(x => x.Inserted);
+        int totalUpd = _sqlImports.Values.Sum(x => x.Updated);
         SummaryRight =
             $"── Импорт SQL ──\n" +
             $"Добавлено: {totalIns}\n" +
