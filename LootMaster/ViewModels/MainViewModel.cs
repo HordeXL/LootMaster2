@@ -261,7 +261,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _npcNames = await dbSvc.LoadNpcNamesAsync(npcIds, progress, ct);
 
             // 3. Load items + categories
-            _itemsData = await dbSvc.LoadItemsAsync(itemIds, parseResult.ItemToNpcs, _npcNames, progress, ct);
+            _itemsData = await dbSvc.LoadItemsAsync(itemIds, parseResult.ItemToNpcs, _npcNames, parseResult.DoodadToLootPack, progress, ct);
             _npcToItems = parseResult.NpcToItems;
 
             // 4. Populate rows on UI thread

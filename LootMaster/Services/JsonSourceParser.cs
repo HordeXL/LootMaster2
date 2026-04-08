@@ -4,22 +4,29 @@ using System.Text.Json;
 namespace LootMaster.Services;
 
 /// <summary>
-/// Parses the NPC-loot JSON files produced by the ArcheAge emulator extractor.
-/// Supports the format used in loot1.json / loot_doodad.json:
-///   [ { "npc_id": 123, "items": [ { "item_id": 456, ... }, ... ] }, ... ]
-/// Multiple files can be merged — duplicate relationships are deduplicated.
+/// Parses NPC-loot and doodad-loot JSON files.
+///
+/// Supported formats:
+///   NPC:    [ { "npc_id": 123, "items": [ { "item_id": 456 } ] } ]
+///   Doodad: [ { "doodad_id": 322, "loot_pack_id": 6414, "items": [ { "item_id": 456 } ] } ]
+///
+/// Doodad IDs are stored in the same source maps as NPC IDs.
+/// loot_pack_id from doodad entries is collected into DoodadToLootPack so
+/// DatabaseService can use it without querying loot_pack_dropping_npcs.
 /// </summary>
 public static class JsonSourceParser
 {
     public record ParseResult(
         Dictionary<int, HashSet<int>> ItemToNpcs,
         Dictionary<int, HashSet<int>> NpcToItems,
+        Dictionary<int, int> DoodadToLootPack,
         IReadOnlyList<string> SkippedFiles);
 
     public static async Task<ParseResult> ParseAsync(IEnumerable<string> paths)
     {
         Dictionary<int, HashSet<int>> itemToNpcs = [];
         Dictionary<int, HashSet<int>> npcToItems = [];
+        Dictionary<int, int> doodadToLootPack = [];
         List<string> skipped = [];
 
         foreach (var path in paths)
@@ -35,27 +42,43 @@ public static class JsonSourceParser
 
             foreach (var entry in doc.RootElement.EnumerateArray())
             {
-                if (!entry.TryGetProperty("npc_id", out var npcProp)) continue;
-                int npcId = npcProp.GetInt32();
+                int sourceId;
+
+                if (entry.TryGetProperty("npc_id", out var npcProp))
+                {
+                    sourceId = npcProp.GetInt32();
+                }
+                else if (entry.TryGetProperty("doodad_id", out var doodadProp))
+                {
+                    sourceId = doodadProp.GetInt32();
+
+                    // Collect loot_pack_id directly from doodad entry
+                    if (entry.TryGetProperty("loot_pack_id", out var packProp))
+                        doodadToLootPack.TryAdd(sourceId, packProp.GetInt32());
+                }
+                else continue;
 
                 if (!entry.TryGetProperty("items", out var itemsProp) ||
                     itemsProp.ValueKind != JsonValueKind.Array) continue;
 
-                npcToItems.TryAdd(npcId, []);
+                npcToItems.TryAdd(sourceId, []);
 
                 foreach (var item in itemsProp.EnumerateArray())
                 {
                     if (!item.TryGetProperty("item_id", out var itemProp)) continue;
                     int itemId = itemProp.GetInt32();
 
-                    itemToNpcs.TryGetValue(itemId, out var npcSet);
-                    if (npcSet is null) { npcSet = []; itemToNpcs[itemId] = npcSet; }
-                    npcSet.Add(npcId);
-                    npcToItems[npcId].Add(itemId);
+                    if (!itemToNpcs.TryGetValue(itemId, out var npcSet))
+                    {
+                        npcSet = [];
+                        itemToNpcs[itemId] = npcSet;
+                    }
+                    npcSet.Add(sourceId);
+                    npcToItems[sourceId].Add(itemId);
                 }
             }
         }
 
-        return new ParseResult(itemToNpcs, npcToItems, skipped);
+        return new ParseResult(itemToNpcs, npcToItems, doodadToLootPack, skipped);
     }
 }

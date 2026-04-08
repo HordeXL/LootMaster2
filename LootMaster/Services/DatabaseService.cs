@@ -20,6 +20,7 @@ public sealed class DatabaseService(string dbPath)
         IReadOnlyList<int> itemIds,
         IReadOnlyDictionary<int, HashSet<int>> itemToNpcs,
         IReadOnlyDictionary<int, string> npcNames,
+        IReadOnlyDictionary<int, int>? doodadToLootPack = null,
         IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
@@ -79,8 +80,10 @@ public sealed class DatabaseService(string dbPath)
                 var npcNamesList = npcIds.ConvertAll(nId => npcNames.TryGetValue(nId, out var nn) ? nn : "");
 
                 var lootPackIds = npcIds
-                    .Where(nId => npcToPackId.ContainsKey(nId))
-                    .Select(nId => npcToPackId[nId])
+                    .Select(nId =>
+                        npcToPackId.TryGetValue(nId, out var p) ? p :
+                        doodadToLootPack != null && doodadToLootPack.TryGetValue(nId, out var dp) ? dp : -1)
+                    .Where(p => p >= 0)
                     .Distinct().OrderBy(x => x).ToList();
 
                 lootData.TryGetValue(id, out var loot);
