@@ -161,20 +161,25 @@ public sealed class DbSyncService(string dbPath)
     public record ImportResult(int Inserted, int Replaced, int Updated, int Other);
 
     /// <summary>
-    /// Executes all non-empty, non-comment SQL statements from a file in a single transaction.
-    /// Returns counts of INSERT / UPDATE / other statements.
+    /// Executes INSERT statements from a SQL file with full upsert logic.
+    /// Skips DROP TABLE, CREATE TABLE, PRAGMA statements.
+    /// Supports both named-column and VALUES-only INSERT formats.
+    /// Handles /* */ and -- comments.
     /// </summary>
     public async Task<ImportResult> ImportSqlFileAsync(
         string filePath,
         IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
-        var lines = await File.ReadAllLinesAsync(filePath, ct);
+        var text = await File.ReadAllTextAsync(filePath, ct);
 
-        // Collect full statements (join lines, split on ';')
+        // Strip /* */ block comments
+        text = Regex.Replace(text, @"/\*.*?\*/", "", RegexOptions.Singleline);
+
+        // Collect statements split by ';'
         var statements = new List<string>();
         var current = new System.Text.StringBuilder();
-        foreach (var line in lines)
+        foreach (var line in text.Split('\n'))
         {
             var trimmed = line.Trim();
             if (trimmed.StartsWith("--") || trimmed.Length == 0) continue;
@@ -186,17 +191,43 @@ public sealed class DbSyncService(string dbPath)
             }
         }
 
+        // Statements to skip entirely
+        static bool ShouldSkip(string sql) =>
+            sql.StartsWith("DROP",   StringComparison.OrdinalIgnoreCase) ||
+            sql.StartsWith("CREATE", StringComparison.OrdinalIgnoreCase) ||
+            sql.StartsWith("PRAGMA", StringComparison.OrdinalIgnoreCase);
+
+        // Table column order extracted from CREATE TABLE statements in the file
+        var tableColumns = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        var createRx = new Regex(
+            @"CREATE\s+TABLE\s+""?(\w+)""?\s*\((.+?)\)",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        foreach (var s in statements)
+        {
+            var m = createRx.Match(s);
+            if (!m.Success) continue;
+            string tbl = m.Groups[1].Value;
+            string[] cols = m.Groups[2].Value
+                .Split(',')
+                .Select(c => c.Trim().Split(' ')[0].Trim('"').Trim('\''))
+                .Where(c => c.Length > 0)
+                .ToArray();
+            tableColumns[tbl] = cols;
+        }
+
         return await Task.Run(() =>
         {
             using var conn = OpenConnection(readOnly: false);
             using var tx = conn.BeginTransaction();
             int inserted = 0, replaced = 0, updated = 0, other = 0;
             int done = 0;
-            foreach (var rawSql in statements)
+
+            var insertable = statements.Where(s => !ShouldSkip(s)).ToList();
+            foreach (var rawSql in insertable)
             {
                 ct.ThrowIfCancellationRequested();
 
-                var parsed = ParseInsert(rawSql);
+                var parsed = ParseInsert(rawSql, tableColumns);
                 if (parsed is not null)
                 {
                     var (table, cols, vals) = parsed.Value;
@@ -206,15 +237,17 @@ public sealed class DbSyncService(string dbPath)
                     bool exists = idVal != null && RowExistsById(conn, tx, table, idVal);
                     if (!exists)
                     {
+                        // Build explicit INSERT with column names (safe even for VALUES-only source)
+                        var colList = string.Join(", ", cols.Select(c => $"\"{c}\""));
+                        var valList = string.Join(", ", vals);
                         using var cmd = conn.CreateCommand();
                         cmd.Transaction = tx;
-                        cmd.CommandText = rawSql;
+                        cmd.CommandText = $"INSERT INTO \"{table}\" ({colList}) VALUES ({valList})";
                         cmd.ExecuteNonQuery();
                         inserted++;
                     }
                     else
                     {
-                        // UPDATE без удаления — оригинальный id сохраняется
                         var setClauses = cols
                             .Select((c, i) => i != idIdx ? $"\"{c}\" = {vals[i]}" : null)
                             .Where(x => x != null);
@@ -225,19 +258,26 @@ public sealed class DbSyncService(string dbPath)
                         replaced++;
                     }
                 }
-                else
+                else if (rawSql.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase))
                 {
                     using var cmd = conn.CreateCommand();
                     cmd.Transaction = tx;
                     cmd.CommandText = rawSql;
                     cmd.ExecuteNonQuery();
-                    if (rawSql.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase)) updated++;
-                    else other++;
+                    updated++;
+                }
+                else if (!rawSql.StartsWith("INSERT", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.Transaction = tx;
+                    cmd.CommandText = rawSql;
+                    cmd.ExecuteNonQuery();
+                    other++;
                 }
 
                 done++;
                 if (done % 100 == 0)
-                    progress?.Report($"Импорт SQL… {done}/{statements.Count}");
+                    progress?.Report($"Импорт SQL… {done}/{insertable.Count}");
             }
             tx.Commit();
             return new ImportResult(inserted, replaced, updated, other);
@@ -300,24 +340,49 @@ public sealed class DbSyncService(string dbPath)
         return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     }
 
-    private static readonly Regex _insertRx = new(
-        @"INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$",
+    // INSERT INTO table (cols) VALUES (vals)
+    private static readonly Regex _insertWithColsRx = new(
+        @"INSERT\s+INTO\s+""?(\w+)""?\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
-    /// <summary>Parses INSERT INTO table (cols) VALUES (vals) → (table, cols[], vals[]).</summary>
-    private static (string table, string[] cols, string[] vals)? ParseInsert(string sql)
-    {
-        var m = _insertRx.Match(sql);
-        if (!m.Success) return null;
+    // INSERT INTO table VALUES (vals)  — no column list
+    private static readonly Regex _insertValuesOnlyRx = new(
+        @"INSERT\s+INTO\s+""?(\w+)""?\s+VALUES\s*\((.+)\)\s*;?\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
-        string table = m.Groups[1].Value;
-        string[] cols = m.Groups[2].Value
-            .Split(',')
-            .Select(c => c.Trim().Trim('"').Trim('\''))
-            .ToArray();
-        string[] vals = SplitSqlValues(m.Groups[3].Value);
-        if (cols.Length != vals.Length) return null;
-        return (table, cols, vals);
+    /// <summary>
+    /// Parses INSERT statement → (table, cols[], vals[]).
+    /// Falls back to tableColumns dict for VALUES-only inserts.
+    /// </summary>
+    private static (string table, string[] cols, string[] vals)? ParseInsert(
+        string sql,
+        Dictionary<string, string[]>? tableColumns = null)
+    {
+        var m = _insertWithColsRx.Match(sql);
+        if (m.Success)
+        {
+            string table = m.Groups[1].Value;
+            string[] cols = m.Groups[2].Value
+                .Split(',')
+                .Select(c => c.Trim().Trim('"').Trim('\''))
+                .ToArray();
+            string[] vals = SplitSqlValues(m.Groups[3].Value);
+            if (cols.Length != vals.Length) return null;
+            return (table, cols, vals);
+        }
+
+        // VALUES-only format: resolve columns from CREATE TABLE info
+        m = _insertValuesOnlyRx.Match(sql);
+        if (m.Success && tableColumns != null)
+        {
+            string table = m.Groups[1].Value;
+            if (!tableColumns.TryGetValue(table, out var cols)) return null;
+            string[] vals = SplitSqlValues(m.Groups[2].Value);
+            if (cols.Length != vals.Length) return null;
+            return (table, cols, vals);
+        }
+
+        return null;
     }
 
     /// <summary>Splits SQL VALUES list respecting single-quoted strings.</summary>
