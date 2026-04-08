@@ -84,6 +84,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SyncDbCommand = new RelayCommand(async () => await SyncDbAsync(), () => _allRows.Count > 0);
         ApplyItemCommand = new RelayCommand(ApplyItemSettings, () => _selectedItem is not null);
         ClearItemCommand = new RelayCommand(ClearItemSettings, () => _selectedItem is not null);
+        ApplyAllFromDbCommand = new RelayCommand(ApplyAllFromDb, () => _allRows.Any(r => r.DbGroup.HasValue && r.DbChance.HasValue));
         ApplyCategoryCommand = new RelayCommand(ApplyCategorySettings, () => _selectedItem is not null);
         ClearCategoryCommand = new RelayCommand(ClearCategorySettings, () => _selectedItem is not null);
         PrevCommand = new RelayCommand(SelectPrev);
@@ -105,6 +106,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand SyncDbCommand { get; }
     public ICommand ApplyItemCommand { get; }
     public ICommand ClearItemCommand { get; }
+    public ICommand ApplyAllFromDbCommand { get; }
     public ICommand ApplyCategoryCommand { get; }
     public ICommand ClearCategoryCommand { get; }
     public ICommand PrevCommand { get; }
@@ -320,10 +322,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
-        // Populate editor
-        ItemGroupText = row.ItemGroup?.ToString() ?? "0";
-        ItemChanceText = row.ItemChance?.ToString() ?? "100.0";
-        CategoryGroupText = row.CategoryGroup?.ToString() ?? "0";
+        // Populate editor — prefer saved value, then DB value, then default
+        ItemGroupText  = row.ItemGroup?.ToString()  ?? row.DbGroup?.ToString()  ?? "0";
+        ItemChanceText = row.ItemChance?.ToString() ?? row.DbChance?.ToString("G") ?? "100.0";
+        CategoryGroupText  = row.CategoryGroup?.ToString()  ?? "0";
         CategoryChanceText = row.CategoryChance?.ToString() ?? "100.0";
 
         RefreshNpcPanel();
@@ -453,6 +455,38 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _ = TrySilentSave();
         ItemsView.Refresh();
         RefreshSummary();
+    }
+
+    private void ApplyAllFromDb()
+    {
+        var candidates = _allRows
+            .Where(r => r.DbGroup.HasValue && r.DbChance.HasValue && r.ItemGroup is null)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            MessageBox.Show("Нет предметов с данными из БД, у которых ещё не задана группа предмета.",
+                "Применить из БД", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Применить Группу (БД) и Шанс (БД) как item-level значения для {candidates.Count} предмет(ов)?",
+            "Применить из БД", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+        if (result != MessageBoxResult.OK) return;
+
+        foreach (var row in candidates)
+        {
+            var ip = GetOrCreateItemProgress(row.ItemId);
+            ip.Group = row.DbGroup;
+            ip.Chance = row.DbChance;
+            row.ItemProgress = ip;
+        }
+
+        _ = TrySilentSave();
+        ItemsView.Refresh();
+        RefreshSummary();
+        StatusText = $"Применено значений из БД: {candidates.Count}";
     }
 
     private void ApplyCategorySettings()

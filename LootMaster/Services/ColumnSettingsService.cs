@@ -16,6 +16,9 @@ public sealed class ColumnSettingsService(string filePath)
     {
         public Dictionary<string, ColumnState> Columns { get; set; } = [];
         public double? SplitterLeft { get; set; }
+        public double? WindowWidth { get; set; }
+        public double? WindowHeight { get; set; }
+        public bool WindowMaximized { get; set; }
     }
 
     public sealed class ColumnState
@@ -24,7 +27,7 @@ public sealed class ColumnSettingsService(string filePath)
         public double Width { get; set; }
     }
 
-    public void Save(DataGrid grid, ColumnDefinition? leftColumn = null)
+    public void Save(DataGrid grid, ColumnDefinition? leftColumn = null, Window? window = null)
     {
         var settings = LoadRaw() ?? new Settings();
 
@@ -43,18 +46,39 @@ public sealed class ColumnSettingsService(string filePath)
         if (leftColumn is not null && leftColumn.ActualWidth > 0)
             settings.SplitterLeft = leftColumn.ActualWidth;
 
+        if (window is not null)
+        {
+            settings.WindowMaximized = window.WindowState == WindowState.Maximized;
+            if (window.WindowState == WindowState.Normal)
+            {
+                settings.WindowWidth  = window.Width;
+                settings.WindowHeight = window.Height;
+            }
+        }
+
         string dir = Path.GetDirectoryName(filePath)!;
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
         File.WriteAllText(filePath, JsonSerializer.Serialize(settings, _opts));
     }
 
-    public void Restore(DataGrid grid, ColumnDefinition? leftColumn = null)
+    public void Restore(DataGrid grid, ColumnDefinition? leftColumn = null, Window? window = null)
     {
         var settings = LoadRaw();
         if (settings is null) return;
 
         if (leftColumn is not null && settings.SplitterLeft is double splW && splW > 0)
             leftColumn.Width = new GridLength(splW, GridUnitType.Pixel);
+
+        if (window is not null)
+        {
+            if (settings.WindowWidth is double ww && ww > 0 && settings.WindowHeight is double wh && wh > 0)
+            {
+                window.Width  = ww;
+                window.Height = wh;
+            }
+            if (settings.WindowMaximized)
+                window.WindowState = WindowState.Maximized;
+        }
 
         var state = settings.Columns;
 

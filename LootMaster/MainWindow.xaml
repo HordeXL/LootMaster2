@@ -195,6 +195,10 @@
                                         Style="{StaticResource ToolbarButton}"/>
                                 <Button Content="Сбросить"  Command="{Binding ClearItemCommand}"
                                         Style="{StaticResource ToolbarButton}"/>
+                                <Button Content="Применить из БД ко всем"
+                                        Command="{Binding ApplyAllFromDbCommand}"
+                                        Padding="10,4" Margin="3,0"
+                                        ToolTip="Применить Группу (БД) и Шанс (БД) как item-level значения для всех предметов, у которых ещё не задана группа"/>
                             </StackPanel>
                         </Grid>
                     </GroupBox>

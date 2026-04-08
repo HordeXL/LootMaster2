@@ -27,13 +27,13 @@ public partial class MainWindow : Window
 
         Loaded += (_, _) =>
         {
-            _colSettings.Restore(ItemsGrid, MainGridLeft);
+            _colSettings.Restore(ItemsGrid, MainGridLeft, this);
             ItemsGrid.Focus();
         };
 
-        Closing += (_, _) => _colSettings.Save(ItemsGrid, MainGridLeft);
+        Closing += (_, _) => _colSettings.Save(ItemsGrid, MainGridLeft, this);
 
-        ItemsGrid.ColumnReordered += (_, _) => _colSettings.Save(ItemsGrid, MainGridLeft);
+        ItemsGrid.ColumnReordered += (_, _) => _colSettings.Save(ItemsGrid, MainGridLeft, this);
 
         NpcDetailGrid.SelectionChanged += OnNpcDetailSelectionChanged;
         NpcDetailGrid.MouseDoubleClick += OnNpcDetailDoubleClick;
