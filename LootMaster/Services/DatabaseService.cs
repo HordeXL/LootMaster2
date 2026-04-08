@@ -31,8 +31,8 @@ public sealed class DatabaseService(string dbPath)
             progress?.Report("Загружаю предметы из БД…");
             var itemRows = QueryById(conn, "SELECT id, name, category_id FROM items", itemIds);
 
-            var foundIds = new List<int>(itemRows.Count);
-            var categoryIds = new HashSet<int>();
+            List<int> foundIds = new(itemRows.Count);
+            HashSet<int> categoryIds = [];
             foreach (var (id, row) in itemRows)
             {
                 foundIds.Add(id);
@@ -50,7 +50,7 @@ public sealed class DatabaseService(string dbPath)
             var catRows = QueryById(conn, "SELECT id, name FROM item_categories", catIdList);
             var catNames = GetLocalizedMap(conn, catIdList, "item_categories", "name");
 
-            var categoryNameMap = new Dictionary<int, string>();
+            Dictionary<int, string> categoryNameMap = [];
             foreach (var (id, row) in catRows)
             {
                 string fallback = row.TryGetValue("name", out var n) ? n?.ToString() ?? "" : "";
@@ -58,7 +58,7 @@ public sealed class DatabaseService(string dbPath)
             }
 
             // 4. Build result
-            var result = new Dictionary<int, ItemInfo>(foundIds.Count);
+            Dictionary<int, ItemInfo> result = new(foundIds.Count);
             foreach (var id in itemIds)
             {
                 if (!itemRows.TryGetValue(id, out var row)) continue;
@@ -99,7 +99,7 @@ public sealed class DatabaseService(string dbPath)
             var rows = QueryById(conn, "SELECT id, name FROM npcs", npcIds);
             var locMap = GetLocalizedMap(conn, npcIds, "npcs", "name");
 
-            var result = new Dictionary<int, string>(rows.Count);
+            Dictionary<int, string> result = new(rows.Count);
             foreach (var (id, row) in rows)
             {
                 string fallback = row.TryGetValue("name", out var n) ? n?.ToString() ?? "" : "";
@@ -129,7 +129,7 @@ public sealed class DatabaseService(string dbPath)
         string baseSql,
         IReadOnlyList<int> ids)
     {
-        var result = new Dictionary<int, Dictionary<string, object?>>(ids.Count);
+        Dictionary<int, Dictionary<string, object?>> result = new(ids.Count);
         foreach (var chunk in Chunked(ids, 500))
         {
             var placeholders = string.Join(',', System.Linq.Enumerable.Range(0, chunk.Count).Select(i => $"@p{i}"));
@@ -144,7 +144,7 @@ public sealed class DatabaseService(string dbPath)
 
             while (reader.Read())
             {
-                var row = new Dictionary<string, object?>(fieldCount);
+                Dictionary<string, object?> row = new(fieldCount);
                 int id = reader.GetInt32(0);
                 for (int i = 0; i < fieldCount; i++)
                     row[names[i]] = reader.IsDBNull(i) ? null : reader.GetValue(i);
@@ -164,7 +164,7 @@ public sealed class DatabaseService(string dbPath)
         string tblName,
         string tblColumnName)
     {
-        var result = new Dictionary<int, string>(ids.Count);
+        Dictionary<int, string> result = new(ids.Count);
         if (ids.Count == 0) return result;
 
         foreach (var chunk in Chunked(ids, 500))
@@ -204,7 +204,7 @@ public sealed class DatabaseService(string dbPath)
         for (int i = 0; i < source.Count; i += size)
         {
             int len = Math.Min(size, source.Count - i);
-            var chunk = new List<T>(len);
+            List<T> chunk = new(len);
             for (int j = 0; j < len; j++) chunk.Add(source[i + j]);
             yield return chunk;
         }

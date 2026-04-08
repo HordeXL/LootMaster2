@@ -51,7 +51,7 @@ public sealed class ProgressService(string stateFilePath)
     // Export
     // ──────────────────────────────────────────────────────────────────────────
 
-    public async Task ExportAsync(string outputPath, IReadOnlyList<(int ItemId, double? Chance)> items)
+    public static async Task ExportAsync(string outputPath, IReadOnlyList<(int ItemId, double? Chance)> items)
     {
         var payload = new
         {

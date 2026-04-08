@@ -574,7 +574,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            await _progressSvc.ExportAsync(dlg.FileName, items);
+            await ProgressService.ExportAsync(dlg.FileName, items);
             StatusText = $"Экспорт сохранён: {dlg.FileName}";
         }
         catch (Exception ex)
