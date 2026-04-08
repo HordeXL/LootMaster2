@@ -158,9 +158,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ObservableCollection<string> LoadedJsonFiles { get; } = new();
 
     // Summary text shown in the summary panel
-    private string _summaryText = "";
+    private string _summaryLeft = "";
+    private string _summaryRight = "";
     private readonly List<(int Inserted, int Updated)> _sqlImports = [];
-    public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
+    public string SummaryLeft  { get => _summaryLeft;  private set => Set(ref _summaryLeft,  value); }
+    public string SummaryRight { get => _summaryRight; private set => Set(ref _summaryRight, value); }
 
     // ──────────────────────────────────────────────────────────────────────────
     // Loading
@@ -816,25 +818,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (row.EffectiveChance.HasValue) withChance++;
         }
 
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"Всего предметов:    {total}");
-        sb.AppendLine($"Обработано:         {done}");
-        sb.AppendLine($"  напрямую:         {itemDone}");
-        sb.AppendLine($"  через категорию:  {catDone}");
-        sb.AppendLine($"С итоговым шансом:  {withChance}");
+        SummaryLeft =
+            $"Всего предметов:   {total}\n" +
+            $"Обработано:        {done}\n" +
+            $"  напрямую:        {itemDone}\n" +
+            $"  через категорию: {catDone}\n" +
+            $"С итоговым шансом: {withChance}";
 
-        if (_sqlImports.Count > 0)
-        {
-            sb.AppendLine();
-            sb.AppendLine("── Импорт SQL ──────────────────");
-            int totalIns = _sqlImports.Sum(x => x.Inserted);
-            int totalUpd = _sqlImports.Sum(x => x.Updated);
-            sb.AppendLine($"Добавлено:  {totalIns}");
-            sb.AppendLine($"Обновлено:  {totalUpd}");
-            sb.AppendLine($"Итого:      {totalIns + totalUpd}");
-        }
-
-        SummaryText = sb.ToString().TrimEnd();
+        int totalIns = _sqlImports.Sum(x => x.Inserted);
+        int totalUpd = _sqlImports.Sum(x => x.Updated);
+        SummaryRight =
+            $"── Импорт SQL ──\n" +
+            $"Добавлено: {totalIns}\n" +
+            $"Обновлено: {totalUpd}\n" +
+            $"Итого:     {totalIns + totalUpd}";
     }
 
     // ──────────────────────────────────────────────────────────────────────────

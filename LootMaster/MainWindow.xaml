@@ -303,7 +303,15 @@
 
                     <!-- Summary -->
                     <GroupBox Header="Сводка" Style="{StaticResource SectionFrame}">
-                        <TextBlock Text="{Binding SummaryText}" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding SummaryLeft}"  FontFamily="Consolas" FontSize="11"/>
+                            <TextBlock Grid.Column="2" Text="{Binding SummaryRight}" FontFamily="Consolas" FontSize="11"/>
+                        </Grid>
                     </GroupBox>
 
                 </StackPanel>
