@@ -284,60 +284,61 @@ public sealed class DbSyncService(string dbPath)
         }, ct);
     }
 
-    public record DbImportResult(int Inserted, int Updated)
-    {
-        public int Total => Inserted + Updated;
-    }
-
-    public record DbImportTableResult(string Table, int Inserted, int Updated);
+    public record DbImportTableResult(string Table, int Rows);
 
     /// <summary>
-    /// Copies rows from the four loot tables of a source SQLite database into
+    /// Reads rows from the four loot tables of a source SQLite database and
     /// the target (loot) database using upsert-by-id logic.
     /// Tables: loot_actability_groups, loot_groups, loot_pack_dropping_npcs, loots.
     /// Missing tables in the source are silently skipped.
     /// </summary>
-    public async Task<List<DbImportTableResult>> ImportFromDbAsync(
+    /// <summary>
+    /// Generates an INSERT OR REPLACE SQL patch file from the four loot tables
+    /// of a source SQLite database. Does NOT modify the target DB.
+    /// Returns per-table row counts for preview.
+    /// </summary>
+    public async Task<List<DbImportTableResult>> GeneratePatchFromDbAsync(
         string sourceDbPath,
+        string patchFilePath,
         IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
         var tables = new[] { "loot_actability_groups", "loot_groups", "loot_pack_dropping_npcs", "loots" };
 
-        return await Task.Run(() =>
+        return await Task.Run(async () =>
         {
             var results = new List<DbImportTableResult>();
 
             using var src = new SqliteConnection($"Data Source={sourceDbPath};Mode=ReadOnly;");
             src.Open();
 
-            using var dst = OpenConnection(readOnly: false);
-            using var tx = dst.BeginTransaction();
+            Directory.CreateDirectory(Path.GetDirectoryName(patchFilePath)!);
+            await using var writer = new StreamWriter(patchFilePath, append: false, System.Text.Encoding.UTF8);
+
+            await writer.WriteLineAsync($"-- Patch generated from: {Path.GetFileName(sourceDbPath)}");
+            await writer.WriteLineAsync($"-- Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            await writer.WriteLineAsync();
 
             foreach (var table in tables)
             {
                 ct.ThrowIfCancellationRequested();
 
-                // Check table exists in source
                 using var checkCmd = src.CreateCommand();
                 checkCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{table}'";
                 if (Convert.ToInt32(checkCmd.ExecuteScalar()) == 0)
                     continue;
 
-                // Read column names from source
                 var cols = new List<string>();
                 using (var pragmaCmd = src.CreateCommand())
                 {
                     pragmaCmd.CommandText = $"PRAGMA table_info(\"{table}\")";
                     using var r = pragmaCmd.ExecuteReader();
-                    while (r.Read()) cols.Add(r.GetString(1)); // column name
+                    while (r.Read()) cols.Add(r.GetString(1));
                 }
                 if (cols.Count == 0) continue;
 
-                int idIdx = cols.FindIndex(c => c.Equals("id", StringComparison.OrdinalIgnoreCase));
                 string colList = string.Join(", ", cols.Select(c => $"\"{c}\""));
 
-                // Read all rows from source
                 var rows = new List<object?[]>();
                 using (var selCmd = src.CreateCommand())
                 {
@@ -352,61 +353,24 @@ public sealed class DbSyncService(string dbPath)
                     }
                 }
 
-                progress?.Report($"Импорт таблицы {table}: {rows.Count} строк…");
+                progress?.Report($"{table}: {rows.Count} строк…");
 
-                int inserted = 0, updated = 0;
-
-                // Build parameterised INSERT and UPDATE commands once
-                var paramNames = cols.Select((_, i) => $"@p{i}").ToList();
-
-                string insertSql = $"INSERT INTO \"{table}\" ({colList}) VALUES ({string.Join(", ", paramNames)})";
-                string updateSql = idIdx >= 0
-                    ? $"UPDATE \"{table}\" SET {string.Join(", ", cols.Select((c, i) => i == idIdx ? null : $"\"{c}\"=@p{i}").Where(x => x != null))} WHERE id=@p{idIdx}"
-                    : "";
-                string existsSql = idIdx >= 0
-                    ? $"SELECT COUNT(*) FROM \"{table}\" WHERE id=@p{idIdx}"
-                    : "";
-
+                await writer.WriteLineAsync($"-- {table} ({rows.Count} rows)");
                 foreach (var row in rows)
                 {
                     ct.ThrowIfCancellationRequested();
-
-                    bool exists = false;
-                    if (idIdx >= 0 && row[idIdx] != null)
-                    {
-                        using var exCmd = dst.CreateCommand();
-                        exCmd.Transaction = tx;
-                        exCmd.CommandText = existsSql;
-                        exCmd.Parameters.AddWithValue($"@p{idIdx}", row[idIdx]!);
-                        exists = Convert.ToInt32(exCmd.ExecuteScalar()) > 0;
-                    }
-
-                    if (!exists)
-                    {
-                        using var insCmd = dst.CreateCommand();
-                        insCmd.Transaction = tx;
-                        insCmd.CommandText = insertSql;
-                        for (int i = 0; i < cols.Count; i++)
-                            insCmd.Parameters.AddWithValue($"@p{i}", row[i] ?? DBNull.Value);
-                        insCmd.ExecuteNonQuery();
-                        inserted++;
-                    }
-                    else
-                    {
-                        using var updCmd = dst.CreateCommand();
-                        updCmd.Transaction = tx;
-                        updCmd.CommandText = updateSql;
-                        for (int i = 0; i < cols.Count; i++)
-                            updCmd.Parameters.AddWithValue($"@p{i}", row[i] ?? DBNull.Value);
-                        updCmd.ExecuteNonQuery();
-                        updated++;
-                    }
+                    var values = row.Select(v => v is null ? "NULL"
+                        : v is long or int    ? v.ToString()
+                        : v is double or float ? ((double)v).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        : $"'{v.ToString()!.Replace("'", "''")}'");
+                    await writer.WriteLineAsync(
+                        $"INSERT OR REPLACE INTO \"{table}\" ({colList}) VALUES ({string.Join(", ", values)});");
                 }
+                await writer.WriteLineAsync();
 
-                results.Add(new DbImportTableResult(table, inserted, updated));
+                results.Add(new DbImportTableResult(table, rows.Count));
             }
 
-            tx.Commit();
             return results;
         }, ct);
     }

@@ -245,6 +245,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             await LoadDataAsync(_progress.DbPath, _progress.SourceJsonPaths);
         }
+        else
+        {
+            // No data to load, but import stats should still be shown
+            RefreshSummary();
+        }
     }
 
     /// <summary>Returns loot DB path if set, otherwise falls back to main DB path.</summary>
@@ -806,6 +811,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public Task SaveOnCloseAsync() => _progressSvc.SaveAsync(_progress);
+
     private async Task TrySilentSave()
     {
         try { await _progressSvc.SaveAsync(_progress); }
@@ -935,6 +942,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             RefreshSummary();
+            _ = TrySilentSave();
             StatusText = _ui.StatusImportDone(totalInserted, totalUpdated);
 
             var sb = new System.Text.StringBuilder();
@@ -971,39 +979,47 @@ public sealed class MainViewModel : INotifyPropertyChanged
         StatusText = _ui.StatusImportingFromDb;
         try
         {
+            string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
+            string patchName = $"patch_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
+            string patchPath = Path.Combine(dataDir, patchName);
+
             var svc = new DbSyncService(EffectiveLootDbPath);
             var progress = new Progress<string>(msg => StatusText = msg);
-            var results = await svc.ImportFromDbAsync(dlg.FileName, progress);
+            var results = await svc.GeneratePatchFromDbAsync(dlg.FileName, patchPath, progress);
 
-            int totalIns = results.Sum(r => r.Inserted);
-            int totalUpd = results.Sum(r => r.Updated);
+            int totalRows = results.Sum(r => r.Rows);
 
             string key = Path.GetFileName(dlg.FileName);
             if (!_progress.DbImports.TryGetValue(key, out var prev)) prev = new();
-            _progress.DbImports[key] = new ImportStat { Inserted = prev.Inserted + totalIns, Updated = prev.Updated + totalUpd };
+            _progress.DbImports[key] = new ImportStat { Inserted = prev.Inserted + totalRows, Updated = prev.Updated };
             RefreshSummary();
+            _ = TrySilentSave();
 
-            StatusText = _ui.StatusImportDbDone(totalIns, totalUpd);
+            StatusText = _ui.IsRussian ? $"Патч сохранён: {patchName}" : $"Patch saved: {patchName}";
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine(_ui.IsRussian
-                ? $"Импорт из БД завершён ({Path.GetFileName(dlg.FileName)})."
-                : $"DB import done ({Path.GetFileName(dlg.FileName)}).");
+                ? $"Сгенерирован патч: {patchName}"
+                : $"Generated patch: {patchName}");
             sb.AppendLine();
             foreach (var r in results)
-                sb.AppendLine($"{r.Table}: +{r.Inserted} / ~{r.Updated}");
+                sb.AppendLine($"  {r.Table}: {r.Rows} {(_ui.IsRussian ? "строк" : "rows")}");
             sb.AppendLine();
             sb.AppendLine(_ui.IsRussian
-                ? $"Всего добавлено: {totalIns}, обновлено: {totalUpd}"
-                : $"Total inserted: {totalIns}, updated: {totalUpd}");
+                ? $"Итого строк: {totalRows}"
+                : $"Total rows: {totalRows}");
+            sb.AppendLine();
+            sb.AppendLine(_ui.IsRussian
+                ? $"Файл сохранён в:\n{patchPath}\n\nПрименить можно через «Импорт SQL в БД»."
+                : $"File saved to:\n{patchPath}\n\nApply it via 'Import SQL to DB'.");
 
             MessageBox.Show(sb.ToString(),
-                _ui.IsRussian ? "Импорт из БД" : "Import from DB",
+                _ui.IsRussian ? "Импорт из БД — патч готов" : "Import from DB — patch ready",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"{(_ui.IsRussian ? "Ошибка импорта из БД" : "DB import error")}:\n{ex.Message}",
+            MessageBox.Show($"{(_ui.IsRussian ? "Ошибка генерации патча" : "Patch generation error")}:\n{ex.Message}",
                 _ui.IsRussian ? "Ошибка" : "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusImportDbError;

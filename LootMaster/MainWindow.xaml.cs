@@ -39,7 +39,11 @@ public partial class MainWindow : Window
             ItemsGrid.Focus();
         };
 
-        Closing += (_, _) => _colSettings.Save(ItemsGrid, MainGridLeft, this);
+        Closing += async (_, _) =>
+        {
+            _colSettings.Save(ItemsGrid, MainGridLeft, this);
+            await _vm.SaveOnCloseAsync();
+        };
 
         ItemsGrid.ColumnReordered += (_, _) => _colSettings.Save(ItemsGrid, MainGridLeft, this);
 
