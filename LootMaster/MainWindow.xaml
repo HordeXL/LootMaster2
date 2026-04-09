@@ -56,6 +56,12 @@
                 <CheckBox  Content="Кол. NPC имена"
                            IsChecked="{Binding ShowNpcNameColumn}"
                            VerticalAlignment="Center" Margin="4,0"/>
+                <Separator/>
+                <Button Content="{Binding LanguageLabel}"
+                        Command="{Binding ToggleLanguageCommand}"
+                        Style="{StaticResource ToolbarButton}"
+                        ToolTip="Переключить язык названий предметов и NPC (RU / EN)"
+                        FontWeight="Bold" MinWidth="36"/>
             </ToolBar>
         </ToolBarTray>
 

@@ -19,6 +19,7 @@ public sealed class ColumnSettingsService(string filePath)
         public double? WindowWidth { get; set; }
         public double? WindowHeight { get; set; }
         public bool WindowMaximized { get; set; }
+        public bool PreferRussian { get; set; } = true;
     }
 
     public sealed class ColumnState
@@ -96,6 +97,20 @@ public sealed class ColumnSettingsService(string filePath)
 
         for (int i = 0; i < ordered.Count; i++)
             ordered[i].DisplayIndex = i;
+    }
+
+    public bool LoadPreferRussian()
+    {
+        return LoadRaw()?.PreferRussian ?? true;
+    }
+
+    public void SavePreferRussian(bool value)
+    {
+        var settings = LoadRaw() ?? new Settings();
+        settings.PreferRussian = value;
+        string dir = Path.GetDirectoryName(filePath)!;
+        if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+        File.WriteAllText(filePath, JsonSerializer.Serialize(settings, _opts));
     }
 
     private Settings? LoadRaw()

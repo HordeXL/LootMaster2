@@ -21,6 +21,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private AppProgress _progress = new();
     private readonly ProgressService _progressSvc;
+    private readonly ColumnSettingsService _colSvc;
+    private bool _preferRussian = true;
 
     // All item rows (source)
     private readonly ObservableCollection<ItemRow> _allRows = new();
@@ -73,6 +75,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
             "Data", "loot_group_progress.json");
         _progressSvc = new ProgressService(stateFile);
 
+        string colFile = Path.Combine(AppContext.BaseDirectory, "Data", "column-settings.json");
+        _colSvc = new ColumnSettingsService(colFile);
+        _preferRussian = _colSvc.LoadPreferRussian();
+
         ItemsView = CollectionViewSource.GetDefaultView(_allRows);
         ItemsView.Filter = FilterRow;
 
@@ -94,6 +100,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         NextCommand = new RelayCommand(SelectNext);
         NextUnprocessedCommand = new RelayCommand(SelectNextUnprocessed);
         JumpToNpcItemCommand = new RelayCommand(JumpToSelectedNpcItem);
+        ToggleLanguageCommand = new RelayCommand(ToggleLanguage);
 
         _ = RestoreSessionAsync();
     }
@@ -119,6 +126,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand NextCommand { get; }
     public ICommand NextUnprocessedCommand { get; }
     public ICommand JumpToNpcItemCommand { get; }
+    public ICommand ToggleLanguageCommand { get; }
 
     // ──────────────────────────────────────────────────────────────────────────
     // Bindable properties
@@ -131,6 +139,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool HighlightCategoryGroup { get => _highlightCategoryGroup; set => Set(ref _highlightCategoryGroup, value); }
     public bool ShowNpcIdColumn { get => _showNpcIdColumn; set => Set(ref _showNpcIdColumn, value); }
     public bool ShowNpcNameColumn { get => _showNpcNameColumn; set => Set(ref _showNpcNameColumn, value); }
+    public bool PreferRussian { get => _preferRussian; set => Set(ref _preferRussian, value); }
+    public string LanguageLabel => _preferRussian ? "RU" : "EN";
 
     public ItemRow? SelectedItem
     {
@@ -274,7 +284,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             StatusText = $"JSON: {itemIds.Count} предметов, {npcIds.Count} NPC. Загружаем имена…";
 
-            var dbSvc = new DatabaseService(dbPath, EffectiveLootDbPath);
+            var dbSvc = new DatabaseService(dbPath, EffectiveLootDbPath, _preferRussian);
 
             // 2. Load NPC names first (needed by LoadItemsAsync)
             _npcNames = await dbSvc.LoadNpcNamesAsync(npcIds, progress, ct);
@@ -581,6 +591,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
             "Справка: группы лута",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    private void ToggleLanguage()
+    {
+        _preferRussian = !_preferRussian;
+        OnPropertyChanged(nameof(PreferRussian));
+        OnPropertyChanged(nameof(LanguageLabel));
+        _colSvc.SavePreferRussian(_preferRussian);
+
+        if (!string.IsNullOrEmpty(_progress.DbPath) && _progress.SourceJsonPaths.Count > 0)
+            _ = LoadDataAsync(_progress.DbPath, _progress.SourceJsonPaths);
     }
 
     private void ApplyCategorySettings()

@@ -8,7 +8,7 @@ namespace LootMaster.Services;
 /// Uses chunked IN clauses (500 per batch) to stay within SQLite variable limits.
 /// Localised names: Russian preferred, English fallback — same logic as lott parser.py.
 /// </summary>
-public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
+public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bool preferRussian = true)
 {
     private readonly string _connStr     = $"Data Source={dbPath};Mode=ReadOnly;";
     private readonly string _lootConnStr = $"Data Source={lootDbPath ?? dbPath};Mode=ReadOnly;";
@@ -44,13 +44,13 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
 
             // 2. Localised item names
             progress?.Report("Загружаю названия предметов…");
-            var itemNames = GetLocalizedMap(conn, foundIds, "items", "name");
+            var itemNames = GetLocalizedMap(conn, foundIds, "items", "name", preferRussian);
 
             // 3. Load categories
             progress?.Report("Загружаю категории…");
             var catIdList = new List<int>(categoryIds);
             var catRows = QueryById(conn, "SELECT id, name FROM item_categories", catIdList);
-            var catNames = GetLocalizedMap(conn, catIdList, "item_categories", "name");
+            var catNames = GetLocalizedMap(conn, catIdList, "item_categories", "name", preferRussian);
 
             Dictionary<int, string> categoryNameMap = [];
             foreach (var (id, row) in catRows)
@@ -128,7 +128,7 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
             progress?.Report("Загружаю NPC из БД…");
 
             var rows = QueryById(conn, "SELECT id, name FROM npcs", npcIds);
-            var locMap = GetLocalizedMap(conn, npcIds, "npcs", "name");
+            var locMap = GetLocalizedMap(conn, npcIds, "npcs", "name", preferRussian);
 
             Dictionary<int, string> result = new(rows.Count);
             foreach (var (id, row) in rows)
@@ -263,7 +263,8 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
         SqliteConnection conn,
         IReadOnlyList<int> ids,
         string tblName,
-        string tblColumnName)
+        string tblColumnName,
+        bool preferRussian = true)
     {
         Dictionary<int, string> result = new(ids.Count);
         if (ids.Count == 0) return result;
@@ -294,7 +295,9 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
 
                 string? ru = reader.IsDBNull(1) ? null : reader.GetString(1);
                 string? en = reader.IsDBNull(2) ? null : reader.GetString(2);
-                result[idx] = !string.IsNullOrEmpty(ru) ? ru : (en ?? "");
+                result[idx] = preferRussian
+                    ? (!string.IsNullOrEmpty(ru) ? ru : (en ?? ""))
+                    : (!string.IsNullOrEmpty(en) ? en : (ru ?? ""));
             }
         }
         return result;
