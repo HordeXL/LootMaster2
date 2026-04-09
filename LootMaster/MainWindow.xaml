@@ -36,6 +36,7 @@
                 <Button Content="Экспорт результата"   Command="{Binding ExportCommand}"        Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
                 <Button Content="Записать в БД"        Command="{Binding SyncDbCommand}"        Style="{StaticResource ToolbarButton}"/>
+                <Separator/>
                 <Button Content="Импорт SQL в БД"      Command="{Binding ImportSqlCommand}"     Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
                 <TextBlock Text="Поиск:" VerticalAlignment="Center" Margin="4,0"/>
