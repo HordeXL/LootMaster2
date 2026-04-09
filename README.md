@@ -3,7 +3,8 @@
 A WPF desktop tool for assigning loot groups and drop chances to ArcheAge items.
 Loads NPC drop tables from JSON files and item/NPC metadata from an SQLite database.
 
-![LootMaster 2.0 screenshot](Docs/screenshot.png)
+![LootMaster 2.0 screenshot (RU)](Docs/screenshot.png)
+![LootMaster 2.0 screenshot (EN)](Docs/screenshot2.png)
 
 ---
 
@@ -18,7 +19,10 @@ Loads NPC drop tables from JSON files and item/NPC metadata from an SQLite datab
 - Jump to any item from the NPC browser with a double-click
 - Auto-save after every change; session is restored automatically on next launch
 - Export results to JSON for use in the server emulator
-- Full UI localization: switch between Russian and English with a single toolbar button (RU/EN)
+- Write results directly to SQLite via upsert (loots + loot_groups tables)
+- Import SQL dumps (including Navicat format) directly into the loot database
+- Two separate SQLite databases supported: data DB + loot DB
+- Full UI localization: switch between Russian and English with a single **RU/EN** toolbar button
 
 ---
 
@@ -31,26 +35,25 @@ Loads NPC drop tables from JSON files and item/NPC metadata from an SQLite datab
 
 ## Getting Started
 
-1. **Open SQLite database** — click "Открыть SQLite базу" and select your `compact.server.table.sqlite3` file
-2. **Open loot JSON file(s)** — click "Открыть JSON дропа" and select one or more loot files
+1. **Open SQLite database** — click "Open SQLite DB" and select your `compact.sqlite3` file
+2. **Open loot DB** *(if separate)* — click "Open Loot DB" and select `compact.server.table.sqlite3`
+3. **Open loot JSON file(s)** — click "Open Drop JSON" and select one or more loot files
 
-Expected loot JSON format:
+Supported loot JSON formats:
+
+NPC loot:
 ```json
-[
-  {
-    "npc_id": 123,
-    "items": [
-      { "item_id": 456 },
-      { "item_id": 789 }
-    ]
-  }
-]
+[{ "npc_id": 123, "items": [{ "item_id": 456 }] }]
+```
+Doodad loot:
+```json
+[{ "doodad_id": 322, "loot_pack_id": 6414, "items": [{ "item_id": 456 }] }]
 ```
 
-3. The table populates with all items and their associated NPCs
-4. Select an item, fill in group/chance in the right panel, click **Применить**
-5. Use **Применить ко всей категории** to apply the same values to all items in a category
-6. Press **Ctrl+S** to save, or use **Экспорт результата** to export the final JSON
+4. The table populates with all items and their associated NPCs
+5. Select an item, fill in group/chance in the right panel, click **Apply**
+6. Use **Apply to whole category** to apply the same values to all items in a category
+7. Press **Ctrl+S** to save, or use **Write to DB** / **Export Result** when done
 
 ---
 
@@ -62,6 +65,7 @@ All data is stored in the `Data\` folder next to the executable:
 LootMaster.exe
 Data\
   loot_group_progress.json    ← working progress file (auto-created)
+  column-settings.json        ← column layout, panel widths, window size, language
 ```
 
 ---
