@@ -14,12 +14,20 @@ public sealed class ItemRow : INotifyPropertyChanged
 {
     private ItemProgress _itemProgress;
     private CategoryProgress _categoryProgress;
+    private bool _highlightCategoryEnabled = true;
 
     public ItemRow(ItemInfo info, ItemProgress itemProgress, CategoryProgress categoryProgress)
     {
         Info = info;
         _itemProgress = itemProgress;
         _categoryProgress = categoryProgress;
+    }
+
+    public void SetHighlightCategoryEnabled(bool enabled)
+    {
+        if (_highlightCategoryEnabled == enabled) return;
+        _highlightCategoryEnabled = enabled;
+        OnPropertyChanged(nameof(HighlightState));
     }
 
     public ItemInfo Info { get; }
@@ -105,8 +113,8 @@ public sealed class ItemRow : INotifyPropertyChanged
     /// ""         — unprocessed                        → default row
     /// </summary>
     public string HighlightState =>
-        _itemProgress.Group.HasValue     ? "Done" :
-        _categoryProgress.Group.HasValue ? "Category" :
+        _itemProgress.Group.HasValue                                  ? "Done" :
+        _categoryProgress.Group.HasValue && _highlightCategoryEnabled ? "Category" :
         "";
 
     // ── INPC ─────────────────────────────────────────────────────────────────

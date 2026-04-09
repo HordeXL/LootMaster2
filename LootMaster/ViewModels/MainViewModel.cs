@@ -145,7 +145,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool IsLoading { get => _isLoading; set => Set(ref _isLoading, value); }
     public string SearchText { get => _searchText; set { Set(ref _searchText, value); ItemsView.Refresh(); } }
     public bool OnlyUnprocessed { get => _onlyUnprocessed; set { Set(ref _onlyUnprocessed, value); ItemsView.Refresh(); RefreshNpcPanel(); } }
-    public bool HighlightCategoryGroup { get => _highlightCategoryGroup; set => Set(ref _highlightCategoryGroup, value); }
+    public bool HighlightCategoryGroup
+    {
+        get => _highlightCategoryGroup;
+        set
+        {
+            if (Set(ref _highlightCategoryGroup, value))
+                foreach (var row in _allRows)
+                    row.SetHighlightCategoryEnabled(value);
+        }
+    }
     public bool ShowNpcIdColumn { get => _showNpcIdColumn; set => Set(ref _showNpcIdColumn, value); }
     public bool ShowNpcNameColumn { get => _showNpcNameColumn; set => Set(ref _showNpcNameColumn, value); }
     public UIStrings UI { get => _ui; private set => Set(ref _ui, value); }
