@@ -18,6 +18,7 @@ Loads NPC drop tables from JSON files and item/NPC metadata from an SQLite datab
 - Jump to any item from the NPC browser with a double-click
 - Auto-save after every change; session is restored automatically on next launch
 - Export results to JSON for use in the server emulator
+- Full UI localization: switch between Russian and English with a single toolbar button (RU/EN)
 
 ---
 
