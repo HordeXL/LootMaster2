@@ -72,6 +72,9 @@ After loading, the status bar shows statistics: how many items, categories, and 
 | Eff. group / Eff. chance | Final values (item takes priority over category) |
 | Loot Pack ID | Loot pack ID linked to the item's NPC |
 | Group (DB) / Chance (DB) | Values already written to the `loots` table in the database |
+| Min Qty / Max Qty | Manually assigned min/max drop quantity |
+| Grade ID | Assigned item grade ID (effective: item-level → DB fallback) |
+| Always | "Always drop" flag (effective: item-level → DB fallback) |
 
 **Row colors:**
 - **Green** — a group is assigned directly to the item (item-level)
@@ -90,18 +93,26 @@ The selected row is always shown in blue — even when focus moves to the input 
 
 1. Click an item in the table on the left
 2. In the right panel — **"Item Settings"** section
-3. **Group** and **Chance** fields are pre-filled automatically: first from saved progress, then from DB values (`Group (DB)` / `Chance (DB)`), otherwise `0` / `100.0`
-4. Enter the desired values and click **"Apply"** — the row turns green
-5. To reset — **"Reset"**
+3. Fields are pre-filled automatically: first from saved progress, then from DB values, otherwise defaults
+4. Available fields:
+   - **Group** and **Chance** — core loot parameters
+   - **Min amount** / **Max amount** — drop quantity range
+   - **Grade ID** — item grade ID
+   - **Always drop** — unconditional drop flag
+5. Enter the desired values and click **"Apply"** — the row turns green
+6. To reset all item fields — **"Reset"**
 
-**"Apply DB to all"** — batch operation: sets `Group (DB)` and `Chance (DB)` as item-level values for all items that have DB data but no manually set item-level group. Shows a confirmation dialog with the count of affected items before proceeding.
+**"Apply DB to all"** — batch operation: sets Group, Chance, Grade ID and Always Drop from DB as item-level values for all items that have DB data but no manually set item-level group.
+
+**"Undo DB apply"** — reverses "Apply DB to all": resets group and chance for all items whose item-level group matches Group (DB).
 
 ### Category (batch assignment)
 
 1. Select any item from the desired category
-2. In the **"Category Settings"** section, enter group/chance
-3. Click **"Apply to whole category"** — all items in the category turn yellow
-4. If an individual item already has its own setting, it takes **priority** over the category
+2. In the **"Category Settings"** section, enter group, chance, Grade ID and Always drop
+3. Click **"Apply to whole category"** — all items in the category turn yellow; Grade ID and Always are applied directly at item-level
+4. To reset the category — **"Reset"** (also clears Grade and Always on all items in the category)
+5. If an individual item already has its own setting, it takes **priority** over the category
 
 > **Priority rule:** `item group > category group`, `item chance > category chance`
 
@@ -170,19 +181,20 @@ After navigation buttons are clicked, focus returns to the main table automatica
 | **"Export Result"** | Saves the final JSON: `{ "items": [ { "item_id": X, "chance": Y }, ... ] }` |
 | **"Write to DB"** | Writes all assigned values directly to SQLite: upsert of `loots` and `loot_groups`. Shows a preview (how many rows will be updated/inserted) before writing. |
 | **"Import SQL to DB"** | Executes SQL file(s) directly into the database. Multiple files can be selected. Supports standard SQL and Navicat dumps (INSERT without column names). New rows are inserted, existing rows (by `id`) are updated without deletion. |
+| **"Import from DB"** | Reads `loot_actability_groups`, `loot_groups`, `loot_pack_dropping_npcs`, `loots` from a selected SQLite database and generates an `INSERT OR REPLACE` SQL patch in the `Data\` folder. Shows a preview with per-table row counts and the file path. The **target DB is not modified** — apply the patch manually via "Import SQL to DB". |
 
-### SQL Import Statistics
+### Import Statistics
 
-The **"Summary"** section in the right panel always shows cumulative statistics for all imported SQL files:
+The **"Summary"** section shows cumulative statistics for both import types side by side:
 
 ```
-SQL Import:
-  Inserted:  N
-  Updated:   M
-  Total:     N+M
+── SQL Import ──        ── DB Import ──
+Inserted:  N            Inserted:  N
+Updated:   M            Updated:   M
+Total:     N+M          Total:     N+M
 ```
 
-Re-importing the same file updates its statistics without duplication.
+Statistics accumulate across sessions and are saved in the progress file.
 
 ---
 
@@ -193,8 +205,9 @@ All data is stored **next to the executable** in the `Data\` folder:
 ```
 LootMaster.exe
 Data\
-  loot_group_progress.json   ← working progress file
-  column-settings.json       ← column layout, panel widths, window size, language
+  loot_group_progress.json      ← working progress file (includes import statistics)
+  column-settings.json          ← column layout, panel widths, window size, language
+  patch_YYYYMMDD_HHMMSS.sql     ← patch files generated via "Import from DB"
 ```
 
 ---
@@ -208,11 +221,13 @@ Data\
   "loot_db_path": "C:/path/to/compact.server.table.sqlite3",
   "source_json_paths": ["C:/path/to/loot1.json", "C:/path/to/loot_doodad.json"],
   "items": {
-    "12345": { "group": 1, "chance": 0.5 }
+    "12345": { "group": 1, "chance": 0.5, "min_amount": 1, "max_amount": 3, "grade_id": 2, "always_drop": false }
   },
   "categories": {
-    "100": { "group": 2, "chance": 1.0 }
-  }
+    "100": { "group": 2, "chance": 1.0, "grade_id": 1, "always_drop": false }
+  },
+  "sql_imports": { "patch.sql": { "inserted": 100, "updated": 50 } },
+  "db_imports":  { "source.sqlite3": { "inserted": 4109, "updated": 0 } }
 }
 ```
 
@@ -270,4 +285,5 @@ Data\
    - "Write to DB" — write directly to SQLite (upsert loots + loot_groups)
    - or "Export Result" — save JSON for further processing
    - or "Import SQL" — load an SQL dump directly into the loot DB
+   - or "Import from DB" — generate a patch from another SQLite database, then apply via "Import SQL to DB"
 ```

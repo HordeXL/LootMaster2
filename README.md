@@ -11,17 +11,20 @@ Loads NPC drop tables from JSON files and item/NPC metadata from an SQLite datab
 ## Features
 
 - Load multiple NPC loot JSON files simultaneously — duplicates are deduplicated automatically
-- Assign loot group and drop chance per item or per entire category at once
+- Assign loot group, drop chance, min/max amount, grade ID and always-drop flag per item or per entire category
 - Category-level assignments cascade to all items; item-level assignments take priority
+- "Apply DB to all" and "Undo DB apply" for batch operations from existing DB values
 - Real-time search and filter (by item name, category, NPC ID/name)
 - "Only unprocessed" filter to focus on remaining work
 - NPC browser — see all NPCs that drop the selected item, and all items a selected NPC drops
 - Jump to any item from the NPC browser with a double-click
-- Auto-save after every change; session is restored automatically on next launch
+- Auto-save after every change and on app close; session is restored automatically on next launch
 - Export results to JSON for use in the server emulator
 - Write results directly to SQLite via upsert (loots + loot_groups tables)
 - Import SQL dumps (including Navicat format) directly into the loot database
+- Import from another SQLite DB — generates an `INSERT OR REPLACE` patch file for review before applying
 - Two separate SQLite databases supported: data DB + loot DB
+- Summary panel shows cumulative SQL import and DB import statistics across sessions
 - Full UI localization: switch between Russian and English with a single **RU/EN** toolbar button
 
 ---
@@ -64,8 +67,9 @@ All data is stored in the `Data\` folder next to the executable:
 ```
 LootMaster.exe
 Data\
-  loot_group_progress.json    ← working progress file (auto-created)
-  column-settings.json        ← column layout, panel widths, window size, language
+  loot_group_progress.json      ← working progress file (auto-created, includes import stats)
+  column-settings.json          ← column layout, panel widths, window size, language
+  patch_YYYYMMDD_HHMMSS.sql     ← patch files generated via "Import from DB"
 ```
 
 ---
