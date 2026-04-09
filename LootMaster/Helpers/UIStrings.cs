@@ -260,10 +260,35 @@ public sealed class UIStrings
               $"  via category:    {catDone}\n" +
               $"With final chance: {withChance}";
 
-    public string SummaryRight(int ins, int upd) =>
-        _ru
-            ? $"── Импорт SQL ──\nДобавлено: {ins}\nОбновлено: {upd}\nИтого:     {ins + upd}"
-            : $"── SQL Import ──\nInserted:  {ins}\nUpdated:   {upd}\nTotal:     {ins + upd}";
+    public string SummaryRight(int sqlIns, int sqlUpd, int dbIns, int dbUpd)
+    {
+        var sb = new System.Text.StringBuilder();
+        if (_ru)
+        {
+            sb.AppendLine("── Импорт SQL ──");
+            sb.AppendLine($"Добавлено: {sqlIns}");
+            sb.AppendLine($"Обновлено: {sqlUpd}");
+            sb.AppendLine($"Итого:     {sqlIns + sqlUpd}");
+            sb.AppendLine();
+            sb.AppendLine("── Импорт из БД ──");
+            sb.AppendLine($"Добавлено: {dbIns}");
+            sb.AppendLine($"Обновлено: {dbUpd}");
+            sb.Append(    $"Итого:     {dbIns + dbUpd}");
+        }
+        else
+        {
+            sb.AppendLine("── SQL Import ──");
+            sb.AppendLine($"Inserted:  {sqlIns}");
+            sb.AppendLine($"Updated:   {sqlUpd}");
+            sb.AppendLine($"Total:     {sqlIns + sqlUpd}");
+            sb.AppendLine();
+            sb.AppendLine("── DB Import ──");
+            sb.AppendLine($"Inserted:  {dbIns}");
+            sb.AppendLine($"Updated:   {dbUpd}");
+            sb.Append(    $"Total:     {dbIns + dbUpd}");
+        }
+        return sb.ToString();
+    }
 
     // ── Status messages ───────────────────────────────────────────────────────
 

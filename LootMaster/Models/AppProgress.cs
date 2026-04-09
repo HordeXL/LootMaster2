@@ -26,4 +26,21 @@ public class AppProgress
     /// <summary>category_id (string) → CategoryProgress</summary>
     [JsonPropertyName("categories")]
     public Dictionary<string, CategoryProgress> Categories { get; set; } = new();
+
+    /// <summary>SQL import stats: filename → (Inserted, Updated)</summary>
+    [JsonPropertyName("sql_imports")]
+    public Dictionary<string, ImportStat> SqlImports { get; set; } = new();
+
+    /// <summary>DB import stats: filename → (Inserted, Updated)</summary>
+    [JsonPropertyName("db_imports")]
+    public Dictionary<string, ImportStat> DbImports { get; set; } = new();
+}
+
+public class ImportStat
+{
+    [JsonPropertyName("inserted")]
+    public int Inserted { get; set; }
+
+    [JsonPropertyName("updated")]
+    public int Updated { get; set; }
 }

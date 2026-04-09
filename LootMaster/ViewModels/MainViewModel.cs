@@ -220,7 +220,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _summaryLeft = "";
     private string _summaryRight = "";
     // key = filename, value = cumulative totals for that file
-    private readonly Dictionary<string, (int Inserted, int Updated)> _sqlImports = [];
     public string SummaryLeft  { get => _summaryLeft;  private set => Set(ref _summaryLeft,  value); }
     public string SummaryRight { get => _summaryRight; private set => Set(ref _summaryRight, value); }
 
@@ -928,7 +927,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 totalInserted += result.Inserted;
                 totalUpdated  += updated;
                 totalOther    += result.Other;
-                _sqlImports[Path.GetFileName(filePath)] = (result.Inserted, updated);
+                string sqlKey = Path.GetFileName(filePath);
+                if (!_progress.SqlImports.TryGetValue(sqlKey, out var prev)) prev = new();
+                _progress.SqlImports[sqlKey] = new ImportStat { Inserted = prev.Inserted + result.Inserted, Updated = prev.Updated + updated };
             }
 
             RefreshSummary();
@@ -974,6 +975,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             int totalIns = results.Sum(r => r.Inserted);
             int totalUpd = results.Sum(r => r.Updated);
+
+            string key = Path.GetFileName(dlg.FileName);
+            if (!_progress.DbImports.TryGetValue(key, out var prev)) prev = new();
+            _progress.DbImports[key] = new ImportStat { Inserted = prev.Inserted + totalIns, Updated = prev.Updated + totalUpd };
+            RefreshSummary();
 
             StatusText = _ui.StatusImportDbDone(totalIns, totalUpd);
 
@@ -1024,9 +1030,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         SummaryLeft = _ui.SummaryLeft(total, done, itemDone, catDone, withChance);
 
-        int totalIns = _sqlImports.Values.Sum(x => x.Inserted);
-        int totalUpd = _sqlImports.Values.Sum(x => x.Updated);
-        SummaryRight = _ui.SummaryRight(totalIns, totalUpd);
+        int sqlIns = _progress.SqlImports.Values.Sum(x => x.Inserted);
+        int sqlUpd = _progress.SqlImports.Values.Sum(x => x.Updated);
+        int dbIns  = _progress.DbImports.Values.Sum(x => x.Inserted);
+        int dbUpd  = _progress.DbImports.Values.Sum(x => x.Updated);
+        SummaryRight = _ui.SummaryRight(sqlIns, sqlUpd, dbIns, dbUpd);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
