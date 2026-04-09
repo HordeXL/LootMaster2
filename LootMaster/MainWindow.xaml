@@ -42,8 +42,10 @@
                 <Button Content="{Binding UI.WriteToDb}"  Command="{Binding SyncDbCommand}"    Style="{StaticResource ToolbarButton}"
                         ToolTip="{Binding UI.WriteTip}"/>
                 <Separator/>
-                <Button Content="{Binding UI.ImportSql}"  Command="{Binding ImportSqlCommand}" Style="{StaticResource ToolbarButton}"
+                <Button Content="{Binding UI.ImportSql}"    Command="{Binding ImportSqlCommand}"    Style="{StaticResource ToolbarButton}"
                         ToolTip="{Binding UI.ImportSqlTip}"/>
+                <Button Content="{Binding UI.ImportFromDb}" Command="{Binding ImportFromDbCommand}" Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.ImportFromDbTip}"/>
                 <Separator/>
                 <TextBlock Text="{Binding UI.Search}" VerticalAlignment="Center" Margin="4,0"/>
                 <TextBox   Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"

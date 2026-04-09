@@ -26,6 +26,9 @@ public sealed class UIStrings
     public string Export        => R("Экспорт результата",   "Export Result");
     public string WriteToDb     => R("Записать в БД",        "Write to DB");
     public string ImportSql     => R("Импорт SQL в БД",      "Import SQL to DB");
+    public string ImportFromDb  => R("Импорт из БД",         "Import from DB");
+    public string ImportFromDbTip => R("Скопировать таблицы лута из другой SQLite базы в текущую БД лута (upsert по id)",
+                                       "Copy loot tables from another SQLite database into the current loot DB (upsert by id)");
     public string Search        => R("Поиск:",               "Search:");
     public string OnlyUnproc    => R("Только необработанные","Unprocessed only");
     public string HlCategories  => R("Подсвечивать категории","Highlight categories");
@@ -165,8 +168,10 @@ public sealed class UIStrings
     public string StatusCounting    => R("Подсчёт затронутых строк…", "Counting affected rows…");
     public string StatusWriteCancelled => R("Запись отменена.",  "Write cancelled.");
     public string StatusWriteError  => R("Ошибка записи в БД.",  "DB write error.");
-    public string StatusImporting   => R("Импорт SQL…",          "Importing SQL…");
-    public string StatusImportError => R("Ошибка импорта SQL.",  "SQL import error.");
+    public string StatusImporting      => R("Импорт SQL…",          "Importing SQL…");
+    public string StatusImportError    => R("Ошибка импорта SQL.",  "SQL import error.");
+    public string StatusImportingFromDb => R("Импорт из БД…",        "Importing from DB…");
+    public string StatusImportDbError  => R("Ошибка импорта из БД.", "DB import error.");
     public string StatusAppliedFromDb(int count) =>
         _ru ? $"Применено значений из БД: {count}"
             : $"Applied DB values: {count}";
@@ -176,4 +181,7 @@ public sealed class UIStrings
     public string StatusImportDone(int ins, int upd) =>
         _ru ? $"Импорт завершён. Добавлено: {ins}, обновлено: {upd}"
             : $"Import done. Inserted: {ins}, updated: {upd}";
+    public string StatusImportDbDone(int ins, int upd) =>
+        _ru ? $"Импорт из БД завершён. Добавлено: {ins}, обновлено: {upd}"
+            : $"DB import done. Inserted: {ins}, updated: {upd}";
 }

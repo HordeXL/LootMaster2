@@ -98,7 +98,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SaveProgressCommand = new RelayCommand(async () => await SaveProgressAsync());
         ExportCommand = new RelayCommand(async () => await ExportAsync(), () => _allRows.Count > 0);
         SyncDbCommand = new RelayCommand(async () => await SyncDbAsync(), () => _allRows.Count > 0);
-        ImportSqlCommand = new RelayCommand(async () => await ImportSqlAsync(), () => !string.IsNullOrEmpty(EffectiveLootDbPath));
+        ImportSqlCommand    = new RelayCommand(async () => await ImportSqlAsync(),    () => !string.IsNullOrEmpty(EffectiveLootDbPath));
+        ImportFromDbCommand = new RelayCommand(async () => await ImportFromDbAsync(), () => !string.IsNullOrEmpty(EffectiveLootDbPath));
         ApplyItemCommand = new RelayCommand(ApplyItemSettings, () => _selectedItem is not null);
         ClearItemCommand = new RelayCommand(ClearItemSettings, () => _selectedItem is not null);
         ApplyAllFromDbCommand = new RelayCommand(ApplyAllFromDb, () => _allRows.Any(r => r.DbGroup.HasValue && r.DbChance.HasValue));
@@ -125,6 +126,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand ExportCommand { get; }
     public ICommand SyncDbCommand { get; }
     public ICommand ImportSqlCommand { get; }
+    public ICommand ImportFromDbCommand { get; }
     public ICommand ApplyItemCommand { get; }
     public ICommand ClearItemCommand { get; }
     public ICommand ApplyAllFromDbCommand { get; }
@@ -902,6 +904,57 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             MessageBox.Show($"Ошибка импорта SQL:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusImportError;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ImportFromDbAsync()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = _ui.ImportFromDb,
+            Filter = "SQLite files (*.sqlite3;*.sqlite;*.db)|*.sqlite3;*.sqlite;*.db|All files (*.*)|*.*",
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        IsLoading = true;
+        StatusText = _ui.StatusImportingFromDb;
+        try
+        {
+            var svc = new DbSyncService(EffectiveLootDbPath);
+            var progress = new Progress<string>(msg => StatusText = msg);
+            var results = await svc.ImportFromDbAsync(dlg.FileName, progress);
+
+            int totalIns = results.Sum(r => r.Inserted);
+            int totalUpd = results.Sum(r => r.Updated);
+
+            StatusText = _ui.StatusImportDbDone(totalIns, totalUpd);
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(_ui.IsRussian
+                ? $"Импорт из БД завершён ({Path.GetFileName(dlg.FileName)})."
+                : $"DB import done ({Path.GetFileName(dlg.FileName)}).");
+            sb.AppendLine();
+            foreach (var r in results)
+                sb.AppendLine($"{r.Table}: +{r.Inserted} / ~{r.Updated}");
+            sb.AppendLine();
+            sb.AppendLine(_ui.IsRussian
+                ? $"Всего добавлено: {totalIns}, обновлено: {totalUpd}"
+                : $"Total inserted: {totalIns}, updated: {totalUpd}");
+
+            MessageBox.Show(sb.ToString(),
+                _ui.IsRussian ? "Импорт из БД" : "Import from DB",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{(_ui.IsRussian ? "Ошибка импорта из БД" : "DB import error")}:\n{ex.Message}",
+                _ui.IsRussian ? "Ошибка" : "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText = _ui.StatusImportDbError;
         }
         finally
         {
