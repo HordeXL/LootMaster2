@@ -22,10 +22,10 @@ Loads NPC drop tables from JSON files and item/NPC metadata from an SQLite datab
 - Export results to JSON for use in the server emulator
 - Write results directly to SQLite via upsert (loots + loot_groups tables)
 - Import SQL dumps (including Navicat format) directly into the loot database
-- Import from another SQLite DB — generates an `INSERT OR REPLACE` patch file for review before applying
+- Generate patch from another SQLite DB — creates an `INSERT OR REPLACE` SQL file for review before applying
 - Two separate SQLite databases supported: data DB + loot DB
 - Summary panel shows cumulative SQL import and DB import statistics across sessions
-- Full UI localization: switch between Russian and English with a single **RU/EN** toolbar button
+- Full UI localization: switch between Russian, English, and Simplified Chinese with a single **RU/EN/ZH** toolbar button
 
 ---
 
@@ -69,7 +69,7 @@ LootMaster.exe
 Data\
   loot_group_progress.json      ← working progress file (auto-created, includes import stats)
   column-settings.json          ← column layout, panel widths, window size, language
-  patch_YYYYMMDD_HHMMSS.sql     ← patch files generated via "Import from DB"
+  patch_YYYYMMDD_HHMMSS.sql     ← patch files generated via "Generate Patch from DB"
 ```
 
 ---
@@ -106,5 +106,6 @@ Data\
 
 ## Documentation
 
-See [Docs/user-guide-en.md](Docs/user-guide-en.md) for full usage instructions in English.  
+See [Docs/user-guide-en.md](Docs/user-guide-en.md) for full usage instructions in English.
 См. [Docs/user-guide-ru.md](Docs/user-guide-ru.md) — руководство на русском языке.
+简体中文版请参阅 [Docs/user-guide-ch.md](Docs/user-guide-ch.md)。

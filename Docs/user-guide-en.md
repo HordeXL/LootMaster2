@@ -43,7 +43,7 @@ After loading, the status bar shows statistics: how many items, categories, and 
 │ [Open SQLite DB] [Open Loot DB] | [Open Drop JSON]              │
 │ | [Save Progress] [Export Result] | [Write to DB] | [Import SQL] │
 │ | [Search...] [Unprocessed only] [Highlight categories]          │
-│ [Show NPC ID] [Show NPC names] | [RU/EN]                        │
+│ [Show NPC ID] [Show NPC names] | [RU/EN/ZH]                      │
 ├──────────────────────────────────────────────────────────────────┤
 ├─ Blue badges with names of loaded JSON files ─────────────────────┤
 │                                                                   │
@@ -144,7 +144,7 @@ The **"?"** button in the "Item Settings" header opens a help window inside the 
 | **"Unprocessed only"** checkbox | Hides already processed items (green and yellow rows) |
 | **"Highlight categories"** checkbox | Toggles yellow highlighting for rows that inherit group from category |
 | **"Show NPC ID"** / **"Show NPC names"** checkboxes | Shows/hides the corresponding table columns |
-| **"RU"** / **"EN"** button | Switches the entire UI language. Setting is saved between sessions. |
+| **"RU"** / **"EN"** / **"ZH"** button | Switches the entire UI language. Setting is saved between sessions. |
 
 ---
 
@@ -181,14 +181,14 @@ After navigation buttons are clicked, focus returns to the main table automatica
 | **"Export Result"** | Saves the final JSON: `{ "items": [ { "item_id": X, "chance": Y }, ... ] }` |
 | **"Write to DB"** | Writes all assigned values directly to SQLite: upsert of `loots` and `loot_groups`. Shows a preview (how many rows will be updated/inserted) before writing. |
 | **"Import SQL to DB"** | Executes SQL file(s) directly into the database. Multiple files can be selected. Supports standard SQL and Navicat dumps (INSERT without column names). New rows are inserted, existing rows (by `id`) are updated without deletion. |
-| **"Import from DB"** | Reads `loot_actability_groups`, `loot_groups`, `loot_pack_dropping_npcs`, `loots` from a selected SQLite database and generates an `INSERT OR REPLACE` SQL patch in the `Data\` folder. Shows a preview with per-table row counts and the file path. The **target DB is not modified** — apply the patch manually via "Import SQL to DB". |
+| **"Generate Patch from DB"** | Reads `loot_actability_groups`, `loot_groups`, `loot_pack_dropping_npcs`, `loots` from a selected SQLite database and generates an `INSERT OR REPLACE` SQL patch in the `Data\` folder. Shows a preview with per-table row counts and the file path. The **target DB is not modified** — apply the patch manually via "Import SQL to DB". |
 
 ### Import Statistics
 
 The **"Summary"** section shows cumulative statistics for both import types side by side:
 
 ```
-── SQL Import ──        ── DB Import ──
+── SQL Import ──        ── Patch Gen ──
 Inserted:  N            Inserted:  N
 Updated:   M            Updated:   M
 Total:     N+M          Total:     N+M
@@ -207,7 +207,7 @@ LootMaster.exe
 Data\
   loot_group_progress.json      ← working progress file (includes import statistics)
   column-settings.json          ← column layout, panel widths, window size, language
-  patch_YYYYMMDD_HHMMSS.sql     ← patch files generated via "Import from DB"
+  patch_YYYYMMDD_HHMMSS.sql     ← patch files generated via "Generate Patch from DB"
 ```
 
 ---
@@ -285,5 +285,5 @@ Data\
    - "Write to DB" — write directly to SQLite (upsert loots + loot_groups)
    - or "Export Result" — save JSON for further processing
    - or "Import SQL" — load an SQL dump directly into the loot DB
-   - or "Import from DB" — generate a patch from another SQLite database, then apply via "Import SQL to DB"
+   - or "Generate Patch from DB" — generate a patch from another SQLite database, then apply via "Import SQL to DB"
 ```
