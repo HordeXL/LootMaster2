@@ -102,4 +102,5 @@ Data\
 
 ## Documentation
 
-See [Docs/user-guide.md](Docs/user-guide.md) for full usage instructions.
+See [Docs/user-guide-en.md](Docs/user-guide-en.md) for full usage instructions in English.  
+См. [Docs/user-guide-ru.md](Docs/user-guide-ru.md) — руководство на русском языке.
