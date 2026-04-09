@@ -786,14 +786,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Выбери SQL файл для импорта",
+            Title = "Выбери SQL файл(ы) для импорта",
             Filter = "SQL files (*.sql)|*.sql|All files (*.*)|*.*",
-            Multiselect = false,
+            Multiselect = true,
         };
         if (dlg.ShowDialog() != true) return;
 
+        var fileList = string.Join("\n", dlg.FileNames.Select(Path.GetFileName));
         var confirm = MessageBox.Show(
-            $"Выполнить все SQL-инструкции из файла:\n{dlg.FileName}\n\nЭто изменит базу данных. Продолжить?",
+            $"Выполнить SQL-инструкции из {dlg.FileNames.Length} файл(а/ов):\n{fileList}\n\nЭто изменит базу данных. Продолжить?",
             "Импорт SQL", MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (confirm != MessageBoxResult.Yes) return;
 
@@ -803,22 +804,29 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             var svc = new DbSyncService(EffectiveLootDbPath);
             var progress = new Progress<string>(msg => StatusText = msg);
-            var result = await svc.ImportSqlFileAsync(dlg.FileName, progress);
-            int updated = result.Replaced + result.Updated;
-            int total = result.Inserted + updated + result.Other;
-            StatusText = $"Импорт завершён. Добавлено: {result.Inserted}, обновлено: {updated}";
-            string fileName = Path.GetFileName(dlg.FileName);
-            _sqlImports[fileName] = (result.Inserted, updated);
+
+            int totalInserted = 0, totalUpdated = 0, totalOther = 0;
+            foreach (var filePath in dlg.FileNames)
+            {
+                var result = await svc.ImportSqlFileAsync(filePath, progress);
+                int updated = result.Replaced + result.Updated;
+                totalInserted += result.Inserted;
+                totalUpdated  += updated;
+                totalOther    += result.Other;
+                _sqlImports[Path.GetFileName(filePath)] = (result.Inserted, updated);
+            }
+
             RefreshSummary();
+            StatusText = $"Импорт завершён. Добавлено: {totalInserted}, обновлено: {totalUpdated}";
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Импорт завершён успешно.");
+            sb.AppendLine($"Импорт завершён успешно ({dlg.FileNames.Length} файл(а/ов)).");
             sb.AppendLine();
-            sb.AppendLine($"Добавлено:        {result.Inserted}");
-            sb.AppendLine($"Обновлено:        {updated}");
-            if (result.Other > 0)
-                sb.AppendLine($"Прочих:           {result.Other}");
-            sb.AppendLine($"Итого:            {total}");
+            sb.AppendLine($"Добавлено:  {totalInserted}");
+            sb.AppendLine($"Обновлено:  {totalUpdated}");
+            if (totalOther > 0)
+                sb.AppendLine($"Прочих:     {totalOther}");
+            sb.AppendLine($"Итого:      {totalInserted + totalUpdated + totalOther}");
             MessageBox.Show(sb.ToString(), "Импорт SQL", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
