@@ -263,13 +263,25 @@
                                 <RowDefinition Height="110"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Text="NPC, с которых падает предмет:" Margin="0,0,0,4"/>
+                            <TextBlock Grid.Row="0" Margin="0,0,0,4">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="NPC, с которых падает предмет: ({0})">
+                                        <Binding Path="NpcListItems.Count"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
                             <ListBox   x:Name="NpcListBox" Grid.Row="1"
                                        ItemsSource="{Binding NpcListItems}"
                                        SelectedItem="{Binding SelectedNpcText, Mode=TwoWay}"
                                        ScrollViewer.VerticalScrollBarVisibility="Auto"/>
 
-                            <TextBlock Grid.Row="3" Text="Все предметы выбранного NPC:" Margin="0,4,0,4"/>
+                            <TextBlock Grid.Row="3" Margin="0,4,0,4">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="Все предметы выбранного NPC: ({0})">
+                                        <Binding Path="NpcDetailItems.Count"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
                             <DataGrid  x:Name="NpcDetailGrid" Grid.Row="4"
                                        ItemsSource="{Binding NpcDetailItems}"
                                        SelectedItem="{Binding SelectedNpcDetailItem, Mode=TwoWay}"
