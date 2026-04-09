@@ -995,32 +995,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
             RefreshSummary();
             _ = TrySilentSave();
 
-            StatusText = _ui.IsRussian ? $"Патч сохранён: {patchName}" : $"Patch saved: {patchName}";
+            StatusText = _ui.StatusPatchSaved(patchName);
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine(_ui.IsRussian
-                ? $"Сгенерирован патч: {patchName}"
-                : $"Generated patch: {patchName}");
+            sb.AppendLine(_ui.PatchGenerated(patchName));
             sb.AppendLine();
             foreach (var r in results)
-                sb.AppendLine($"  {r.Table}: {r.Rows} {(_ui.IsRussian ? "строк" : "rows")}");
+                sb.AppendLine($"  {r.Table}: {r.Rows} {_ui.PatchRowsLabel}");
             sb.AppendLine();
-            sb.AppendLine(_ui.IsRussian
-                ? $"Итого строк: {totalRows}"
-                : $"Total rows: {totalRows}");
+            sb.AppendLine(_ui.PatchTotalLabel(totalRows));
             sb.AppendLine();
-            sb.AppendLine(_ui.IsRussian
-                ? $"Файл сохранён в:\n{patchPath}\n\nПрименить можно через «Импорт SQL в БД»."
-                : $"File saved to:\n{patchPath}\n\nApply it via 'Import SQL to DB'.");
+            sb.AppendLine(string.Format(_ui.PatchApplyHint, patchPath));
 
             MessageBox.Show(sb.ToString(),
-                _ui.IsRussian ? "Импорт из БД — патч готов" : "Import from DB — patch ready",
+                _ui.PatchReadyTitle,
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"{(_ui.IsRussian ? "Ошибка генерации патча" : "Patch generation error")}:\n{ex.Message}",
-                _ui.IsRussian ? "Ошибка" : "Error",
+            MessageBox.Show($"{_ui.PatchErrorMsg}:\n{ex.Message}",
+                _ui.PatchErrorTitle,
                 MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusImportDbError;
         }

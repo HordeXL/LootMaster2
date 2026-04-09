@@ -30,10 +30,10 @@ public sealed class UIStrings
     public string Export        => T("Экспорт результата",   "Export Result", "导出结果");
     public string WriteToDb     => T("Записать в БД",        "Write to DB", "写入数据库");
     public string ImportSql     => T("Импорт SQL в БД",      "Import SQL to DB", "导入SQL到数据库");
-    public string ImportFromDb  => T("Импорт из БД",         "Import from DB", "从数据库导入");
-    public string ImportFromDbTip => T("Скопировать таблицы лута из другой SQLite базы в текущую БД лута (upsert по id)",
-                                       "Copy loot tables from another SQLite database into the current loot DB (upsert by id)",
-                                       "从另一个SQLite数据库复制战利品表到当前战利品数据库 (按id更新或插入)");
+    public string ImportFromDb  => T("Генерация патча из БД",  "Generate Patch from DB", "从数据库生成补丁");
+    public string ImportFromDbTip => T("Сравнить другую SQLite базу с текущей БД лута и создать SQL-патч-файл (INSERT/UPDATE для loots и loot_groups)",
+                                       "Compare another SQLite database with the current loot DB and generate an SQL patch file (INSERT/UPDATE for loots and loot_groups)",
+                                       "将另一个SQLite数据库与当前战利品数据库比较，生成SQL补丁文件 (对loots和loot_groups进行INSERT/UPDATE)");
     public string Search        => T("Поиск:",               "Search:", "搜索:");
     public string OnlyUnproc    => T("Только необработанные","Unprocessed only", "仅未处理");
     public string HlCategories  => T("Подсвечивать категории","Highlight categories", "高亮分类");
@@ -347,10 +347,10 @@ public sealed class UIStrings
 
     public string SummaryRightDb(int ins, int upd) =>
         _lang == 0
-            ? $"── Импорт из БД ──\nДобавлено: {ins}\nОбновлено: {upd}\nИтого:     {ins + upd}"
+            ? $"── Генерация патча ──\nДобавлено: {ins}\nОбновлено: {upd}\nИтого:     {ins + upd}"
             : _lang == 1
-            ? $"── DB Import ──\nInserted:  {ins}\nUpdated:   {upd}\nTotal:     {ins + upd}"
-            : $"── 数据库导入 ──\n已插入:  {ins}\n已更新:  {upd}\n总计:      {ins + upd}";
+            ? $"── Patch Gen ──\nInserted:  {ins}\nUpdated:   {upd}\nTotal:     {ins + upd}"
+            : $"── 补丁生成 ──\n已插入:  {ins}\n已更新:  {upd}\n总计:      {ins + upd}";
 
     // ── Status messages ───────────────────────────────────────────────────────
 
@@ -371,8 +371,12 @@ public sealed class UIStrings
     public string StatusWriteError  => T("Ошибка записи в БД.",  "DB write error.", "数据库写入错误。");
     public string StatusImporting      => T("Импорт SQL…",          "Importing SQL…", "导入SQL…");
     public string StatusImportError    => T("Ошибка импорта SQL.",  "SQL import error.", "SQL导入错误。");
-    public string StatusImportingFromDb => T("Импорт из БД…",        "Importing from DB…", "从数据库导入…");
-    public string StatusImportDbError  => T("Ошибка импорта из БД.", "DB import error.", "数据库导入错误。");
+    public string StatusImportingFromDb => T("Генерация патча…",     "Generating patch…", "生成补丁…");
+    public string StatusImportDbError  => T("Ошибка генерации патча.", "Patch generation error.", "补丁生成错误。");
+    public string PatchReadyTitle     => T("Генерация патча — готово", "Patch generation ready", "补丁生成完成");
+    public string PatchApplyHint      => T("Файл сохранён в:\n{0}\n\nПрименить можно через «Импорт SQL в БД».",
+                                            "File saved to:\n{0}\n\nApply it via 'Import SQL to DB'.",
+                                            "文件保存到:\n{0}\n\n可通过 '导入SQL到数据库' 应用。");
     public string StatusAppliedFromDb(int count) =>
         _lang == 0 ? $"Применено значений из БД: {count}"
             : _lang == 1 ? $"Applied DB values: {count}"
@@ -380,6 +384,12 @@ public sealed class UIStrings
     public string StatusDbOpened(string name)   => _lang == 0 ? $"База данных: {name}"   : _lang == 1 ? $"Database: {name}"   : $"数据库: {name}";
     public string StatusLootDbOpened(string name) => _lang == 0 ? $"База лута: {name}"   : _lang == 1 ? $"Loot DB: {name}"   : $"战利品数据库: {name}";
     public string StatusExported(string path)   => _lang == 0 ? $"Экспорт сохранён: {path}" : _lang == 1 ? $"Exported: {path}" : $"已导出: {path}";
+    public string StatusPatchSaved(string name) => _lang == 0 ? $"Патч сохранён: {name}" : _lang == 1 ? $"Patch saved: {name}" : $"补丁已保存: {name}";
+    public string PatchGenerated(string name)   => _lang == 0 ? $"Сгенерирован патч: {name}" : _lang == 1 ? $"Generated patch: {name}" : $"已生成补丁: {name}";
+    public string PatchRowsLabel              => _lang == 0 ? "строк" : _lang == 1 ? "rows" : "行";
+    public string PatchTotalLabel(int total)    => _lang == 0 ? $"Итого строк: {total}" : _lang == 1 ? $"Total rows: {total}" : $"总行数: {total}";
+    public string PatchErrorTitle             => T("Ошибка генерации патча", "Patch generation error", "补丁生成错误");
+    public string PatchErrorMsg               => T("Ошибка генерации патча", "Error generating patch", "生成补丁时出错");
     public string StatusImportDone(int ins, int upd) =>
         _lang == 0 ? $"Импорт завершён. Добавлено: {ins}, обновлено: {upd}"
             : _lang == 1 ? $"Import done. Inserted: {ins}, updated: {upd}"
