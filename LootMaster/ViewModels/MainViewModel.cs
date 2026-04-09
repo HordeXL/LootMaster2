@@ -52,8 +52,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     // Editor fields
     private string _itemGroupText = "";
     private string _itemChanceText = "";
+    private string _itemMinAmtText = "";
+    private string _itemMaxAmtText = "";
+    private string _itemGradeIdText = "";
+    private bool   _itemAlwaysDrop = false;
     private string _categoryGroupText = "";
     private string _categoryChanceText = "";
+    private string _categoryGradeIdText = "";
+    private bool   _categoryAlwaysDrop = false;
 
     // Filter
     private string _searchText = "";
@@ -188,10 +194,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public string ItemGroupText { get => _itemGroupText; set => Set(ref _itemGroupText, value); }
-    public string ItemChanceText { get => _itemChanceText; set => Set(ref _itemChanceText, value); }
-    public string CategoryGroupText { get => _categoryGroupText; set => Set(ref _categoryGroupText, value); }
-    public string CategoryChanceText { get => _categoryChanceText; set => Set(ref _categoryChanceText, value); }
+    public string ItemGroupText    { get => _itemGroupText;    set => Set(ref _itemGroupText, value); }
+    public string ItemChanceText   { get => _itemChanceText;   set => Set(ref _itemChanceText, value); }
+    public string ItemMinAmtText   { get => _itemMinAmtText;   set => Set(ref _itemMinAmtText, value); }
+    public string ItemMaxAmtText   { get => _itemMaxAmtText;   set => Set(ref _itemMaxAmtText, value); }
+    public string ItemGradeIdText  { get => _itemGradeIdText;  set => Set(ref _itemGradeIdText, value); }
+    public bool   ItemAlwaysDrop   { get => _itemAlwaysDrop;   set => Set(ref _itemAlwaysDrop, value); }
+    public string CategoryGroupText   { get => _categoryGroupText;   set => Set(ref _categoryGroupText, value); }
+    public string CategoryChanceText  { get => _categoryChanceText;  set => Set(ref _categoryChanceText, value); }
+    public string CategoryGradeIdText { get => _categoryGradeIdText; set => Set(ref _categoryGradeIdText, value); }
+    public bool   CategoryAlwaysDrop  { get => _categoryAlwaysDrop;  set => Set(ref _categoryAlwaysDrop, value); }
 
     public ObservableCollection<string> LoadedJsonFiles { get; } = new();
 
@@ -404,10 +416,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         // Populate editor — prefer saved value, then DB value, then default
-        ItemGroupText  = row.ItemGroup?.ToString()  ?? row.DbGroup?.ToString()  ?? "0";
-        ItemChanceText = row.ItemChance?.ToString("0.######") ?? row.DbChance?.ToString("0.######") ?? "100.0";
-        CategoryGroupText  = row.CategoryGroup?.ToString()  ?? "0";
-        CategoryChanceText = row.CategoryChance?.ToString("0.######") ?? "100.0";
+        ItemGroupText   = row.ItemGroup?.ToString()              ?? row.DbGroup?.ToString()              ?? "0";
+        ItemChanceText  = row.ItemChance?.ToString("0.######")   ?? row.DbChance?.ToString("0.######")   ?? "100.0";
+        ItemMinAmtText  = row.Info.DbMinAmount.HasValue  ? (row.ItemProgress.MinAmount  ?? row.Info.DbMinAmount)!.ToString()! : (row.ItemProgress.MinAmount?.ToString() ?? "");
+        ItemMaxAmtText  = row.Info.DbMaxAmount.HasValue  ? (row.ItemProgress.MaxAmount  ?? row.Info.DbMaxAmount)!.ToString()! : (row.ItemProgress.MaxAmount?.ToString() ?? "");
+        ItemGradeIdText = row.Info.DbGradeId.HasValue    ? (row.ItemProgress.GradeId    ?? row.Info.DbGradeId)!.ToString()!   : (row.ItemProgress.GradeId?.ToString()   ?? "");
+        ItemAlwaysDrop  = row.ItemProgress.AlwaysDrop    ?? row.Info.DbAlwaysDrop ?? false;
+        CategoryGroupText   = row.CategoryGroup?.ToString()              ?? "0";
+        CategoryChanceText  = row.CategoryChance?.ToString("0.######")  ?? "100.0";
+        CategoryGradeIdText = row.CategoryProgress.GradeId?.ToString()  ?? "";
+        CategoryAlwaysDrop  = row.CategoryProgress.AlwaysDrop           ?? false;
 
         RefreshNpcPanel();
     }
@@ -516,9 +534,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (_selectedItem is null) return;
         if (!TryParseGroupChance(ItemGroupText, ItemChanceText, out int? grp, out double? chc)) return;
 
+        int? minAmt   = string.IsNullOrWhiteSpace(ItemMinAmtText)  ? null : int.TryParse(ItemMinAmtText,  out int mn) ? mn : null;
+        int? maxAmt   = string.IsNullOrWhiteSpace(ItemMaxAmtText)  ? null : int.TryParse(ItemMaxAmtText,  out int mx) ? mx : null;
+        int? gradeId  = string.IsNullOrWhiteSpace(ItemGradeIdText) ? null : int.TryParse(ItemGradeIdText, out int gd) ? gd : null;
+
         var ip = GetOrCreateItemProgress(_selectedItem.ItemId);
-        ip.Group = grp;
-        ip.Chance = chc;
+        ip.Group     = grp;
+        ip.Chance    = chc;
+        ip.MinAmount = minAmt;
+        ip.MaxAmount = maxAmt;
+        ip.GradeId   = gradeId;
+        ip.AlwaysDrop = ItemAlwaysDrop;
         _selectedItem.ItemProgress = ip;
 
         _ = TrySilentSave();
@@ -531,8 +557,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (_selectedItem is null) return;
         _progress.Items.Remove(_selectedItem.ItemId.ToString());
         _selectedItem.ItemProgress = new ItemProgress();
-        ItemGroupText = "";
-        ItemChanceText = "";
+        ItemGroupText   = "";
+        ItemChanceText  = "";
+        ItemMinAmtText  = "";
+        ItemMaxAmtText  = "";
+        ItemGradeIdText = "";
+        ItemAlwaysDrop  = false;
         _ = TrySilentSave();
         ItemsView.Refresh();
         RefreshSummary();
@@ -559,8 +589,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (var row in candidates)
         {
             var ip = GetOrCreateItemProgress(row.ItemId);
-            ip.Group = row.DbGroup;
-            ip.Chance = row.DbChance;
+            ip.Group      = row.DbGroup;
+            ip.Chance     = row.DbChance;
+            ip.GradeId    = row.DbGradeId;
+            ip.AlwaysDrop = row.DbAlwaysDrop;
             row.ItemProgress = ip;
         }
 
@@ -650,13 +682,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (_selectedItem is null) return;
         if (!TryParseGroupChance(CategoryGroupText, CategoryChanceText, out int? grp, out double? chc)) return;
 
+        int? gradeId = string.IsNullOrWhiteSpace(CategoryGradeIdText) ? null : int.TryParse(CategoryGradeIdText, out int gd) ? gd : null;
+
         var cp = GetOrCreateCategoryProgress(_selectedItem.CategoryId);
-        cp.Group = grp;
-        cp.Chance = chc;
+        cp.Group     = grp;
+        cp.Chance    = chc;
+        cp.GradeId   = gradeId;
+        cp.AlwaysDrop = CategoryAlwaysDrop;
 
         // Update all rows that share this category
         foreach (var row in _allRows.Where(r => r.CategoryId == _selectedItem.CategoryId))
+        {
             row.CategoryProgress = cp;
+
+            // GradeId and AlwaysDrop have no category-level cascade — apply directly to ItemProgress
+            var ip = GetOrCreateItemProgress(row.ItemId);
+            ip.GradeId    = gradeId;
+            ip.AlwaysDrop = CategoryAlwaysDrop;
+            row.ItemProgress = ip;
+        }
 
         _ = TrySilentSave();
         ItemsView.Refresh();
@@ -669,10 +713,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _progress.Categories.Remove(_selectedItem.CategoryId.ToString());
         var emptycp = new CategoryProgress();
         foreach (var row in _allRows.Where(r => r.CategoryId == _selectedItem.CategoryId))
+        {
             row.CategoryProgress = emptycp;
 
-        CategoryGroupText = "";
-        CategoryChanceText = "";
+            var ip = GetOrCreateItemProgress(row.ItemId);
+            ip.GradeId    = null;
+            ip.AlwaysDrop = null;
+            row.ItemProgress = ip;
+        }
+
+        CategoryGroupText   = "";
+        CategoryChanceText  = "";
+        CategoryGradeIdText = "";
+        CategoryAlwaysDrop  = false;
         _ = TrySilentSave();
         ItemsView.Refresh();
         RefreshSummary();
@@ -1038,10 +1091,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void ClearEditor()
     {
-        ItemGroupText = "";
-        ItemChanceText = "";
-        CategoryGroupText = "";
-        CategoryChanceText = "";
+        ItemGroupText   = "";
+        ItemChanceText  = "";
+        ItemMinAmtText  = "";
+        ItemMaxAmtText  = "";
+        ItemGradeIdText = "";
+        ItemAlwaysDrop  = false;
+        CategoryGroupText   = "";
+        CategoryChanceText  = "";
+        CategoryGradeIdText = "";
+        CategoryAlwaysDrop  = false;
     }
 
     // ──────────────────────────────────────────────────────────────────────────

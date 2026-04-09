@@ -64,6 +64,10 @@ public partial class MainWindow : Window
         SetColumnHeader(ItemsGrid,    "EffectiveChance",ui.ColChanceEff);
         SetColumnHeader(ItemsGrid,    "DbGroup",       ui.ColGroupDb);
         SetColumnHeader(ItemsGrid,    "DbChance",      ui.ColChanceDb);
+        SetColumnHeader(ItemsGrid,    "ItemMinAmount",       ui.ColMinAmount);
+        SetColumnHeader(ItemsGrid,    "ItemMaxAmount",       ui.ColMaxAmount);
+        SetColumnHeader(ItemsGrid,    "EffectiveGradeId",    ui.ColGradeId);
+        SetColumnHeader(ItemsGrid,    "EffectiveAlwaysDrop", ui.ColAlwaysDrop);
 
         SetColumnHeader(NpcDetailGrid,"ItemName",      ui.ColItem);
         SetColumnHeader(NpcDetailGrid,"EffectiveGroup",ui.ColGroup);

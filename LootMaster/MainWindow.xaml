@@ -165,6 +165,10 @@
                     <DataGridTextColumn Header="Loot Pack ID"        Binding="{Binding LootPackIdsText}"                                   Width="120" CanUserSort="True"/>
                     <DataGridTextColumn Header="Группа (БД)"        Binding="{Binding DbGroup,        Converter={StaticResource NullToStr}}" Width="100" CanUserSort="True"/>
                     <DataGridTextColumn Header="Шанс (БД)"          Binding="{Binding DbChance,       Converter={StaticResource NullToStr}}" Width="100" CanUserSort="True"/>
+                    <DataGridTextColumn Header="Мин. кол."           Binding="{Binding ItemMinAmount,       Converter={StaticResource NullToStr}}" Width="80"  CanUserSort="True"/>
+                    <DataGridTextColumn Header="Макс. кол."          Binding="{Binding ItemMaxAmount,       Converter={StaticResource NullToStr}}" Width="80"  CanUserSort="True"/>
+                    <DataGridTextColumn Header="Грейд ID"            Binding="{Binding EffectiveGradeId,    Converter={StaticResource NullToStr}}" Width="80"  CanUserSort="True"/>
+                    <DataGridTextColumn Header="Всегда"              Binding="{Binding EffectiveAlwaysDrop, Converter={StaticResource NullToStr}}" Width="70"  CanUserSort="True"/>
                 </DataGrid.Columns>
             </DataGrid>
 
@@ -199,24 +203,43 @@
                         </GroupBox.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition/>
                                 <RowDefinition/>
                                 <RowDefinition/>
+                                <RowDefinition/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding UI.ItemGroupLabel}" VerticalAlignment="Center" Margin="0,4"/>
+                            <!-- Row 0: Group | Min amount -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding UI.ItemGroupLabel}"  VerticalAlignment="Center" Margin="0,4"/>
                             <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding ItemGroupText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding UI.ItemMinAmtLabel}" VerticalAlignment="Center" Margin="8,4,0,4"/>
+                            <TextBox   Grid.Row="0" Grid.Column="3" Text="{Binding ItemMinAmtText, UpdateSourceTrigger=PropertyChanged}"
+                                       Margin="4,4" VerticalAlignment="Center"/>
 
+                            <!-- Row 1: Chance | Max amount -->
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding UI.ItemChanceLabel}" VerticalAlignment="Center" Margin="0,4"/>
                             <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding ItemChanceText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding UI.ItemMaxAmtLabel}" VerticalAlignment="Center" Margin="8,4,0,4"/>
+                            <TextBox   Grid.Row="1" Grid.Column="3" Text="{Binding ItemMaxAmtText, UpdateSourceTrigger=PropertyChanged}"
+                                       Margin="4,4" VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                            <!-- Row 2: Grade ID | Always drop -->
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding UI.ItemGradeLabel}"  VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBox   Grid.Row="2" Grid.Column="1" Text="{Binding ItemGradeIdText, UpdateSourceTrigger=PropertyChanged}"
+                                       Margin="4,4" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding UI.ItemAlwaysLabel}" VerticalAlignment="Center" Margin="8,4,0,4"/>
+                            <CheckBox  Grid.Row="2" Grid.Column="3" IsChecked="{Binding ItemAlwaysDrop}"
+                                       VerticalAlignment="Center" Margin="4,4"/>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
                                         Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button Content="{Binding UI.BtnApply}" Command="{Binding ApplyItemCommand}"
                                         Style="{StaticResource ToolbarButton}"
@@ -240,24 +263,37 @@
                     <GroupBox Header="{Binding UI.GbCatSettings}" Style="{StaticResource SectionFrame}">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition/>
                                 <RowDefinition/>
                                 <RowDefinition/>
+                                <RowDefinition/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding UI.CatGroupLabel}" VerticalAlignment="Center" Margin="0,4"/>
-                            <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding CategoryGroupText, UpdateSourceTrigger=PropertyChanged}"
+                            <!-- Row 0: Group -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding UI.CatGroupLabel}"  VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBox   Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding CategoryGroupText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
 
+                            <!-- Row 1: Chance -->
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding UI.CatChanceLabel}" VerticalAlignment="Center" Margin="0,4"/>
-                            <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding CategoryChanceText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox   Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding CategoryChanceText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                            <!-- Row 2: Grade ID | Always drop -->
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding UI.CatGradeLabel}"  VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBox   Grid.Row="2" Grid.Column="1" Text="{Binding CategoryGradeIdText, UpdateSourceTrigger=PropertyChanged}"
+                                       Margin="4,4" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding UI.CatAlwaysLabel}" VerticalAlignment="Center" Margin="8,4,0,4"/>
+                            <CheckBox  Grid.Row="2" Grid.Column="3" IsChecked="{Binding CategoryAlwaysDrop}"
+                                       VerticalAlignment="Center" Margin="4,4"/>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
                                         Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button Content="{Binding UI.BtnApplyCat}" Command="{Binding ApplyCategoryCommand}"
                                         Padding="10,4" Margin="3,0"

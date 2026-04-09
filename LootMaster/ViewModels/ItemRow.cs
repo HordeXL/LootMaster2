@@ -92,8 +92,24 @@ public sealed class ItemRow : INotifyPropertyChanged
 
     // ── Current DB values (read-only, loaded at startup) ────────────────────
 
-    public int?    DbGroup  => Info.DbGroup;
-    public double? DbChance => Info.DbChance;
+    public int?    DbGroup      => Info.DbGroup;
+    public double? DbChance     => Info.DbChance;
+    public int?    DbMinAmount  => Info.DbMinAmount;
+    public int?    DbMaxAmount  => Info.DbMaxAmount;
+    public int?    DbGradeId    => Info.DbGradeId;
+    public bool?   DbAlwaysDrop => Info.DbAlwaysDrop;
+
+    // ── Item-level editable extra fields ────────────────────────────────────
+
+    public int?  ItemGradeId    => _itemProgress.GradeId;
+    public bool? ItemAlwaysDrop => _itemProgress.AlwaysDrop;
+    public int?  ItemMinAmount  => _itemProgress.MinAmount;
+    public int?  ItemMaxAmount  => _itemProgress.MaxAmount;
+
+    // ── Effective extra fields (item-level → DB fallback) ───────────────────
+
+    public int?  EffectiveGradeId    => _itemProgress.GradeId    ?? Info.DbGradeId;
+    public bool? EffectiveAlwaysDrop => _itemProgress.AlwaysDrop ?? Info.DbAlwaysDrop;
 
     // ── Effective (cascade) values ───────────────────────────────────────────
 
@@ -129,6 +145,12 @@ public sealed class ItemRow : INotifyPropertyChanged
         OnPropertyChanged(nameof(CategoryChance));
         OnPropertyChanged(nameof(EffectiveGroup));
         OnPropertyChanged(nameof(EffectiveChance));
+        OnPropertyChanged(nameof(ItemGradeId));
+        OnPropertyChanged(nameof(ItemAlwaysDrop));
+        OnPropertyChanged(nameof(ItemMinAmount));
+        OnPropertyChanged(nameof(ItemMaxAmount));
+        OnPropertyChanged(nameof(EffectiveGradeId));
+        OnPropertyChanged(nameof(EffectiveAlwaysDrop));
         OnPropertyChanged(nameof(IsProcessed));
         OnPropertyChanged(nameof(HighlightState));
     }

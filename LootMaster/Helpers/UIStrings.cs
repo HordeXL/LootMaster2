@@ -89,6 +89,10 @@ public sealed class UIStrings
     public string ColChanceDb   => R("Шанс (БД)",           "Chance (DB)");
     public string ColGroup      => R("Группа",              "Group");
     public string ColChance     => R("Шанс",                "Chance");
+    public string ColMinAmount  => R("Мин. кол.",           "Min Qty");
+    public string ColMaxAmount  => R("Макс. кол.",          "Max Qty");
+    public string ColGradeId    => R("Грейд ID",            "Grade ID");
+    public string ColAlwaysDrop => R("Всегда",              "Always");
 
     // ── Right panel GroupBox headers ──────────────────────────────────────────
 
@@ -103,6 +107,10 @@ public sealed class UIStrings
 
     public string ItemGroupLabel    => R("Группа предмета:",        "Item group:");
     public string ItemChanceLabel   => R("Шанс предмета:",          "Item chance:");
+    public string ItemMinAmtLabel   => R("Мин. количество:",        "Min amount:");
+    public string ItemMaxAmtLabel   => R("Макс. количество:",       "Max amount:");
+    public string ItemGradeLabel    => R("Грейд ID:",               "Grade ID:");
+    public string ItemAlwaysLabel   => R("Всегда выпадает:",        "Always drop:");
     public string BtnApply          => R("Применить",               "Apply");
     public string BtnReset          => R("Сбросить",                "Reset");
     public string BtnApplyAllFromDb  => R("Применить из БД ко всем", "Apply DB to all");
@@ -216,6 +224,8 @@ public sealed class UIStrings
 
     public string CatGroupLabel     => R("Группа категории:",            "Category group:");
     public string CatChanceLabel    => R("Шанс категории:",              "Category chance:");
+    public string CatGradeLabel     => R("Грейд ID:",                    "Grade ID:");
+    public string CatAlwaysLabel    => R("Всегда выпадает:",             "Always drop:");
     public string BtnApplyCat       => R("Применить ко всей категории",  "Apply to whole category");
 
     // ── Navigation ────────────────────────────────────────────────────────────
