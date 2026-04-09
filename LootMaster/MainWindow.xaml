@@ -25,42 +25,42 @@
         ════════════════════════════════════════════════════════════════════ -->
         <ToolBarTray DockPanel.Dock="Top">
             <ToolBar>
-                <Button Content="Открыть SQLite базу"     Command="{Binding OpenDbCommand}"       Style="{StaticResource ToolbarButton}"
-                        ToolTip="База с предметами, NPC, категориями (compact.sqlite3)"/>
-                <Button Content="Открыть БД лута"       Command="{Binding OpenLootDbCommand}"   Style="{StaticResource ToolbarButton}"
-                        ToolTip="База с таблицами лута: loots, loot_groups, loot_pack_dropping_npcs (compact.server.table.sqlite3)"/>
+                <Button Content="{Binding UI.OpenDb}"     Command="{Binding OpenDbCommand}"     Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.OpenDbTip}"/>
+                <Button Content="{Binding UI.OpenLootDb}" Command="{Binding OpenLootDbCommand}" Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.OpenLootDbTip}"/>
                 <Separator/>
-                <Button Content="Открыть JSON дропа"    Command="{Binding OpenJsonCommand}"      Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.OpenJson}"   Command="{Binding OpenJsonCommand}"   Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
-                <Button Content="Сохранить прогресс"   Command="{Binding SaveProgressCommand}"  Style="{StaticResource ToolbarButton}"/>
-                <Button Content="Экспорт результата"   Command="{Binding ExportCommand}"        Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.SaveProgress}" Command="{Binding SaveProgressCommand}" Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.Export}"       Command="{Binding ExportCommand}"       Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
-                <Button Content="Записать в БД"        Command="{Binding SyncDbCommand}"        Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.WriteToDb}"  Command="{Binding SyncDbCommand}"    Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
-                <Button Content="Импорт SQL в БД"      Command="{Binding ImportSqlCommand}"     Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.ImportSql}"  Command="{Binding ImportSqlCommand}" Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
-                <TextBlock Text="Поиск:" VerticalAlignment="Center" Margin="4,0"/>
+                <TextBlock Text="{Binding UI.Search}" VerticalAlignment="Center" Margin="4,0"/>
                 <TextBox   Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                            Width="200" VerticalAlignment="Center" Margin="2,0"/>
                 <Separator/>
-                <CheckBox  Content="Только необработанные"
+                <CheckBox  Content="{Binding UI.OnlyUnproc}"
                            IsChecked="{Binding OnlyUnprocessed}"
                            VerticalAlignment="Center" Margin="4,0"/>
-                <CheckBox  Content="Подсвечивать категории"
+                <CheckBox  Content="{Binding UI.HlCategories}"
                            IsChecked="{Binding HighlightCategoryGroup}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <Separator/>
-                <CheckBox  Content="Кол. NPC ID"
+                <CheckBox  Content="{Binding UI.ShowNpcId}"
                            IsChecked="{Binding ShowNpcIdColumn}"
                            VerticalAlignment="Center" Margin="4,0"/>
-                <CheckBox  Content="Кол. NPC имена"
+                <CheckBox  Content="{Binding UI.ShowNpcNames}"
                            IsChecked="{Binding ShowNpcNameColumn}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <Separator/>
                 <Button Content="{Binding LanguageLabel}"
                         Command="{Binding ToggleLanguageCommand}"
                         Style="{StaticResource ToolbarButton}"
-                        ToolTip="Переключить язык названий предметов и NPC (RU / EN)"
+                        ToolTip="{Binding UI.LangTip}"
                         FontWeight="Bold" MinWidth="36"/>
             </ToolBar>
         </ToolBarTray>
@@ -123,6 +123,7 @@
                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
+                    <!-- Headers updated in code-behind when language changes -->
                     <DataGridTextColumn Header="Item ID"         Binding="{Binding ItemId}"       Width="80"  CanUserSort="True"/>
                     <DataGridTextColumn Header="Предмет"         Binding="{Binding ItemName}"     Width="200" CanUserSort="True"/>
                     <DataGridTextColumn Header="Cat ID"          Binding="{Binding CategoryId}"   Width="70"  CanUserSort="True"/>
@@ -161,19 +162,11 @@
                 <StackPanel Margin="6">
 
                     <!-- Info box -->
-                    <GroupBox Header="Выбранный предмет" Style="{StaticResource SectionFrame}" Height="160">
+                    <GroupBox Header="{Binding UI.GbSelectedItem}" Style="{StaticResource SectionFrame}" Height="160">
                         <StackPanel>
-                            <TextBlock FontFamily="Consolas" FontSize="11" TextWrapping="Wrap">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="Item ID: {0}&#x0a;Предмет: {1}&#x0a;Cat ID: {2}&#x0a;Категория: {3}">
-                                        <Binding Path="SelectedItem.ItemId"       FallbackValue="—"/>
-                                        <Binding Path="SelectedItem.ItemName"     FallbackValue="—"/>
-                                        <Binding Path="SelectedItem.CategoryId"   FallbackValue="—"/>
-                                        <Binding Path="SelectedItem.CategoryName" FallbackValue="—"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                            <TextBlock FontFamily="Consolas" FontSize="11" Text="NPC:" Margin="0,4,0,2"/>
+                            <TextBlock FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"
+                                       Text="{Binding SelectedItemInfoText}"/>
+                            <TextBlock FontFamily="Consolas" FontSize="11" Text="{Binding UI.NpcLabel}" Margin="0,4,0,2"/>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <TextBlock FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"
                                            Text="{Binding SelectedItem.NpcNamesText, FallbackValue='—'}"/>
@@ -185,11 +178,11 @@
                     <GroupBox Style="{StaticResource SectionFrame}">
                         <GroupBox.Header>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Настройки предмета" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding UI.GbItemSettings}" VerticalAlignment="Center"/>
                                 <Button Content="?" Command="{Binding ShowGroupHelpCommand}"
                                         Width="18" Height="18" Margin="6,0,0,0" Padding="0"
                                         FontSize="11" FontWeight="Bold"
-                                        ToolTip="Справка по группам лута"/></StackPanel>
+                                        ToolTip="{Binding UI.GroupHelpTip}"/></StackPanel>
                         </GroupBox.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -202,30 +195,30 @@
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Группа предмета:" VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding UI.ItemGroupLabel}" VerticalAlignment="Center" Margin="0,4"/>
                             <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding ItemGroupText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Шанс предмета:" VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding UI.ItemChanceLabel}" VerticalAlignment="Center" Margin="0,4"/>
                             <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding ItemChanceText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
 
                             <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                         Orientation="Horizontal" Margin="0,6,0,0">
-                                <Button Content="Применить" Command="{Binding ApplyItemCommand}"
+                                <Button Content="{Binding UI.BtnApply}" Command="{Binding ApplyItemCommand}"
                                         Style="{StaticResource ToolbarButton}"/>
-                                <Button Content="Сбросить"  Command="{Binding ClearItemCommand}"
+                                <Button Content="{Binding UI.BtnReset}" Command="{Binding ClearItemCommand}"
                                         Style="{StaticResource ToolbarButton}"/>
-                                <Button Content="Применить из БД ко всем"
+                                <Button Content="{Binding UI.BtnApplyAllFromDb}"
                                         Command="{Binding ApplyAllFromDbCommand}"
                                         Padding="10,4" Margin="3,0"
-                                        ToolTip="Применить Группу (БД) и Шанс (БД) как item-level значения для всех предметов, у которых ещё не задана группа"/>
+                                        ToolTip="{Binding UI.BtnApplyAllTip}"/>
                             </StackPanel>
                         </Grid>
                     </GroupBox>
 
                     <!-- Category settings -->
-                    <GroupBox Header="Настройки категории" Style="{StaticResource SectionFrame}">
+                    <GroupBox Header="{Binding UI.GbCatSettings}" Style="{StaticResource SectionFrame}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
@@ -237,35 +230,35 @@
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Группа категории:" VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding UI.CatGroupLabel}" VerticalAlignment="Center" Margin="0,4"/>
                             <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding CategoryGroupText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Шанс категории:" VerticalAlignment="Center" Margin="0,4"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding UI.CatChanceLabel}" VerticalAlignment="Center" Margin="0,4"/>
                             <TextBox   Grid.Row="1" Grid.Column="1" Text="{Binding CategoryChanceText, UpdateSourceTrigger=PropertyChanged}"
                                        Margin="4,4" VerticalAlignment="Center"/>
 
                             <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                         Orientation="Horizontal" Margin="0,6,0,0">
-                                <Button Content="Применить ко всей категории" Command="{Binding ApplyCategoryCommand}"
+                                <Button Content="{Binding UI.BtnApplyCat}" Command="{Binding ApplyCategoryCommand}"
                                         Padding="10,4" Margin="3,0"/>
-                                <Button Content="Сбросить" Command="{Binding ClearCategoryCommand}"
+                                <Button Content="{Binding UI.BtnReset}" Command="{Binding ClearCategoryCommand}"
                                         Style="{StaticResource ToolbarButton}"/>
                             </StackPanel>
                         </Grid>
                     </GroupBox>
 
                     <!-- Navigation -->
-                    <GroupBox Header="Навигация" Style="{StaticResource SectionFrame}">
+                    <GroupBox Header="{Binding UI.GbNavigation}" Style="{StaticResource SectionFrame}">
                         <WrapPanel>
-                            <Button Content="← Предыдущий"        Command="{Binding PrevCommand}"            Style="{StaticResource ToolbarButton}"/>
-                            <Button Content="Следующий →"          Command="{Binding NextCommand}"            Style="{StaticResource ToolbarButton}"/>
-                            <Button Content="Следующий необработ." Command="{Binding NextUnprocessedCommand}" Style="{StaticResource ToolbarButton}"/>
+                            <Button Content="{Binding UI.BtnPrev}"      Command="{Binding PrevCommand}"            Style="{StaticResource ToolbarButton}"/>
+                            <Button Content="{Binding UI.BtnNext}"      Command="{Binding NextCommand}"            Style="{StaticResource ToolbarButton}"/>
+                            <Button Content="{Binding UI.BtnNextUnproc}" Command="{Binding NextUnprocessedCommand}" Style="{StaticResource ToolbarButton}"/>
                         </WrapPanel>
                     </GroupBox>
 
                     <!-- NPC browser -->
-                    <GroupBox Header="NPC выбранного предмета" Style="{StaticResource SectionFrame}">
+                    <GroupBox Header="{Binding UI.GbNpcBrowser}" Style="{StaticResource SectionFrame}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -275,25 +268,13 @@
                                 <RowDefinition Height="110"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Margin="0,0,0,4">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="NPC, с которых падает предмет: ({0})">
-                                        <Binding Path="NpcListItems.Count"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                            <TextBlock Grid.Row="0" Text="{Binding NpcListLabelText}" Margin="0,0,0,4"/>
                             <ListBox   x:Name="NpcListBox" Grid.Row="1"
                                        ItemsSource="{Binding NpcListItems}"
                                        SelectedItem="{Binding SelectedNpcText, Mode=TwoWay}"
                                        ScrollViewer.VerticalScrollBarVisibility="Auto"/>
 
-                            <TextBlock Grid.Row="3" Margin="0,4,0,4">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="Все предметы выбранного NPC: ({0})">
-                                        <Binding Path="NpcDetailItems.Count"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                            <TextBlock Grid.Row="3" Text="{Binding NpcDetailLabelText}" Margin="0,4,0,4"/>
                             <DataGrid  x:Name="NpcDetailGrid" Grid.Row="4"
                                        ItemsSource="{Binding NpcDetailItems}"
                                        SelectedItem="{Binding SelectedNpcDetailItem, Mode=TwoWay}"
@@ -315,18 +296,19 @@
                                     </Style>
                                 </DataGrid.RowStyle>
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Item ID"      Binding="{Binding ItemId}"                                             Width="75"/>
-                                    <DataGridTextColumn Header="Предмет"      Binding="{Binding ItemName}"                                           Width="*"/>
-                                    <DataGridTextColumn Header="Pack ID"      Binding="{Binding LootPackId, Converter={StaticResource NullToStr}}"   Width="65"/>
-                                    <DataGridTextColumn Header="Группа"       Binding="{Binding EffectiveGroup,  Converter={StaticResource NullToStr}}" Width="65"/>
-                                    <DataGridTextColumn Header="Шанс"         Binding="{Binding EffectiveChance, Converter={StaticResource NullToStr}}" Width="65"/>
+                                    <!-- Headers updated in code-behind when language changes -->
+                                    <DataGridTextColumn Header="Item ID"  Binding="{Binding ItemId}"                                             Width="75"/>
+                                    <DataGridTextColumn Header="Предмет"  Binding="{Binding ItemName}"                                           Width="*"/>
+                                    <DataGridTextColumn Header="Pack ID"  Binding="{Binding LootPackId, Converter={StaticResource NullToStr}}"   Width="65"/>
+                                    <DataGridTextColumn Header="Группа"   Binding="{Binding EffectiveGroup,  Converter={StaticResource NullToStr}}" Width="65"/>
+                                    <DataGridTextColumn Header="Шанс"     Binding="{Binding EffectiveChance, Converter={StaticResource NullToStr}}" Width="65"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
                     </GroupBox>
 
                     <!-- Summary -->
-                    <GroupBox Header="Сводка" Style="{StaticResource SectionFrame}">
+                    <GroupBox Header="{Binding UI.GbSummary}" Style="{StaticResource SectionFrame}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>

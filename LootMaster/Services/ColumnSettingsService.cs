@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace LootMaster.Services;
 
@@ -35,9 +36,9 @@ public sealed class ColumnSettingsService(string filePath)
         settings.Columns.Clear();
         foreach (var col in grid.Columns)
         {
-            string? header = col.Header?.ToString();
-            if (string.IsNullOrEmpty(header)) continue;
-            settings.Columns[header] = new ColumnState
+            string key = GetColumnKey(col);
+            if (string.IsNullOrEmpty(key)) continue;
+            settings.Columns[key] = new ColumnState
             {
                 DisplayIndex = col.DisplayIndex,
                 Width = col.ActualWidth,
@@ -85,14 +86,14 @@ public sealed class ColumnSettingsService(string filePath)
 
         foreach (var col in grid.Columns)
         {
-            string? header = col.Header?.ToString();
-            if (header is null || !state.TryGetValue(header, out var s)) continue;
+            string key = GetColumnKey(col);
+            if (!state.TryGetValue(key, out var s)) continue;
             if (s.Width > 0) col.Width = new DataGridLength(s.Width);
         }
 
         var ordered = grid.Columns
-            .Where(c => c.Header?.ToString() is string h && state.ContainsKey(h))
-            .OrderBy(c => state[c.Header!.ToString()!].DisplayIndex)
+            .Where(c => state.ContainsKey(GetColumnKey(c)))
+            .OrderBy(c => state[GetColumnKey(c)].DisplayIndex)
             .ToList();
 
         for (int i = 0; i < ordered.Count; i++)
@@ -111,6 +112,19 @@ public sealed class ColumnSettingsService(string filePath)
         string dir = Path.GetDirectoryName(filePath)!;
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
         File.WriteAllText(filePath, JsonSerializer.Serialize(settings, _opts));
+    }
+
+    /// <summary>
+    /// Uses binding path as a stable key (language-independent).
+    /// Falls back to header text for columns without a binding (e.g. visibility-only columns).
+    /// </summary>
+    private static string GetColumnKey(DataGridColumn col)
+    {
+        if (col is DataGridBoundColumn bc &&
+            bc.Binding is Binding b &&
+            !string.IsNullOrEmpty(b.Path?.Path))
+            return b.Path.Path;
+        return col.Header?.ToString() ?? "";
     }
 
     private Settings? LoadRaw()

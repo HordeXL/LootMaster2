@@ -1,3 +1,4 @@
+using LootMaster.Helpers;
 using LootMaster.Models;
 using LootMaster.Services;
 using Microsoft.Win32;
@@ -23,6 +24,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly ProgressService _progressSvc;
     private readonly ColumnSettingsService _colSvc;
     private bool _preferRussian = true;
+    private UIStrings _ui = new(true);
 
     // All item rows (source)
     private readonly ObservableCollection<ItemRow> _allRows = new();
@@ -31,8 +33,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICollectionView ItemsView { get; }
 
     // NPC data for the item currently selected
-    public ObservableCollection<string> NpcListItems { get; } = new();
-    public ObservableCollection<NpcItemRow> NpcDetailItems { get; } = new();
+    public ObservableCollection<string> NpcListItems { get; }
+    public ObservableCollection<NpcItemRow> NpcDetailItems { get; }
 
     // Raw lookup maps (set after loading)
     private Dictionary<int, ItemInfo> _itemsData = new();
@@ -59,7 +61,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _highlightCategoryGroup = true;
 
     // Status
-    private string _statusText = "Загрузи SQLite базу и JSON дропа";
+    private string _statusText = "";
     private bool _isLoading;
 
     private CancellationTokenSource? _loadCts;
@@ -70,6 +72,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public MainViewModel()
     {
+        NpcListItems = new ObservableCollection<string>();
+        NpcDetailItems = new ObservableCollection<NpcItemRow>();
+        NpcListItems.CollectionChanged   += (_, _) => OnPropertyChanged(nameof(NpcListLabelText));
+        NpcDetailItems.CollectionChanged += (_, _) => OnPropertyChanged(nameof(NpcDetailLabelText));
+
         string stateFile = Path.Combine(
             AppContext.BaseDirectory,
             "Data", "loot_group_progress.json");
@@ -78,6 +85,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         string colFile = Path.Combine(AppContext.BaseDirectory, "Data", "column-settings.json");
         _colSvc = new ColumnSettingsService(colFile);
         _preferRussian = _colSvc.LoadPreferRussian();
+        _ui = new UIStrings(_preferRussian);
+        StatusText = _ui.InitialStatus;
 
         ItemsView = CollectionViewSource.GetDefaultView(_allRows);
         ItemsView.Filter = FilterRow;
@@ -139,6 +148,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool HighlightCategoryGroup { get => _highlightCategoryGroup; set => Set(ref _highlightCategoryGroup, value); }
     public bool ShowNpcIdColumn { get => _showNpcIdColumn; set => Set(ref _showNpcIdColumn, value); }
     public bool ShowNpcNameColumn { get => _showNpcNameColumn; set => Set(ref _showNpcNameColumn, value); }
+    public UIStrings UI { get => _ui; private set => Set(ref _ui, value); }
     public bool PreferRussian { get => _preferRussian; set => Set(ref _preferRussian, value); }
     public string LanguageLabel => _preferRussian ? "RU" : "EN";
 
@@ -148,7 +158,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set
         {
             if (Set(ref _selectedItem, value))
+            {
                 OnItemSelected(value);
+                OnPropertyChanged(nameof(SelectedItemInfoText));
+            }
         }
     }
 
@@ -168,6 +181,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string CategoryChanceText { get => _categoryChanceText; set => Set(ref _categoryChanceText, value); }
 
     public ObservableCollection<string> LoadedJsonFiles { get; } = new();
+
+    // Translated labels for NPC browser and item info box
+    public string NpcListLabelText   => _ui.NpcListLabel(NpcListItems.Count);
+    public string NpcDetailLabelText => _ui.NpcDetailLabel(NpcDetailItems.Count);
+    public string SelectedItemInfoText =>
+        _selectedItem is null ? "" :
+        string.Format(_ui.InfoFormat,
+            _selectedItem.ItemId, _selectedItem.ItemName,
+            _selectedItem.CategoryId, _selectedItem.CategoryName);
 
     // Summary text shown in the summary panel
     private string _summaryLeft = "";
@@ -212,7 +234,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         };
         if (dlg.ShowDialog() != true) return;
         _progress.DbPath = dlg.FileName;
-        StatusText = $"База данных: {Path.GetFileName(dlg.FileName)}";
+        StatusText = _ui.StatusDbOpened(Path.GetFileName(dlg.FileName));
         await TrySilentSave();
     }
 
@@ -225,7 +247,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         };
         if (dlg.ShowDialog() != true) return;
         _progress.LootDbPath = dlg.FileName;
-        StatusText = $"База лута: {Path.GetFileName(dlg.FileName)}";
+        StatusText = _ui.StatusLootDbOpened(Path.GetFileName(dlg.FileName));
         await TrySilentSave();
     }
 
@@ -271,7 +293,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var progress = new Progress<string>(msg => StatusText = msg);
 
             // 1. Parse JSON
-            StatusText = "Парсим JSON…";
+            StatusText = _ui.StatusParsingJson;
             var parseResult = await JsonSourceParser.ParseAsync(jsonPaths);
 
             if (parseResult.SkippedFiles.Count > 0)
@@ -319,16 +341,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (first is not null)
                 SelectedItem = first;
 
-            StatusText = $"Готово. Предметов: {_itemsData.Count}, NPC: {_npcNames.Count}, категорий: {_progress.Categories.Count}";
+            StatusText = _ui.StatusReady(_itemsData.Count, _npcNames.Count, _progress.Categories.Count);
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Загрузка отменена.";
+            StatusText = _ui.StatusCancelled;
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка загрузки:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText = "Ошибка загрузки.";
+            StatusText = _ui.StatusLoadError;
         }
         finally
         {
@@ -532,7 +554,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _ = TrySilentSave();
         ItemsView.Refresh();
         RefreshSummary();
-        StatusText = $"Применено значений из БД: {candidates.Count}";
+        StatusText = _ui.StatusAppliedFromDb(candidates.Count);
     }
 
     private static void ShowGroupHelp()
@@ -596,13 +618,30 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void ToggleLanguage()
     {
         _preferRussian = !_preferRussian;
+        _ui = new UIStrings(_preferRussian);
+        _colSvc.SavePreferRussian(_preferRussian);
+
         OnPropertyChanged(nameof(PreferRussian));
         OnPropertyChanged(nameof(LanguageLabel));
-        _colSvc.SavePreferRussian(_preferRussian);
+        OnPropertyChanged(nameof(UI));
+        OnPropertyChanged(nameof(NpcListLabelText));
+        OnPropertyChanged(nameof(NpcDetailLabelText));
+        OnPropertyChanged(nameof(SelectedItemInfoText));
+        RefreshSummary();
+
+        // Update initial status text if no data loaded
+        if (_allRows.Count == 0)
+            StatusText = _ui.InitialStatus;
+
+        // Notify code-behind to re-apply column headers
+        LanguageChanged?.Invoke();
 
         if (!string.IsNullOrEmpty(_progress.DbPath) && _progress.SourceJsonPaths.Count > 0)
             _ = LoadDataAsync(_progress.DbPath, _progress.SourceJsonPaths);
     }
+
+    /// <summary>Fired when language changes so code-behind can update DataGrid column headers.</summary>
+    public event Action? LanguageChanged;
 
     private void ApplyCategorySettings()
     {
@@ -703,7 +742,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             await _progressSvc.SaveAsync(_progress);
-            StatusText = "Прогресс сохранён.";
+            StatusText = _ui.StatusSaved;
         }
         catch (Exception ex)
         {
@@ -734,7 +773,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             await ProgressService.ExportAsync(dlg.FileName, items);
-            StatusText = $"Экспорт сохранён: {dlg.FileName}";
+            StatusText = _ui.StatusExported(dlg.FileName);
         }
         catch (Exception ex)
         {
@@ -766,13 +805,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         DbSyncService.SyncPreview preview;
         try
         {
-            StatusText = "Подсчёт затронутых строк…";
+            StatusText = _ui.StatusCounting;
             preview = await svc.PreviewAsync(syncItems);
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка при анализе БД:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText = "Ошибка.";
+            StatusText = _ui.StatusWriteError;
             return;
         }
 
@@ -783,7 +822,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             $"Продолжить?",
             "Запись в БД", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-        if (confirm != MessageBoxResult.Yes) { StatusText = "Запись отменена."; return; }
+        if (confirm != MessageBoxResult.Yes) { StatusText = _ui.StatusWriteCancelled; return; }
 
         // Sync
         IsLoading = true;
@@ -795,7 +834,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка записи в БД:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText = "Ошибка записи в БД.";
+            StatusText = _ui.StatusWriteError;
         }
         finally
         {
@@ -820,7 +859,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (confirm != MessageBoxResult.Yes) return;
 
         IsLoading = true;
-        StatusText = "Импорт SQL…";
+        StatusText = _ui.StatusImporting;
         try
         {
             var svc = new DbSyncService(EffectiveLootDbPath);
@@ -838,7 +877,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             RefreshSummary();
-            StatusText = $"Импорт завершён. Добавлено: {totalInserted}, обновлено: {totalUpdated}";
+            StatusText = _ui.StatusImportDone(totalInserted, totalUpdated);
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Импорт завершён успешно ({dlg.FileNames.Length} файл(а/ов)).");
@@ -853,7 +892,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка импорта SQL:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText = "Ошибка импорта SQL.";
+            StatusText = _ui.StatusImportError;
         }
         finally
         {
@@ -877,20 +916,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (row.EffectiveChance.HasValue) withChance++;
         }
 
-        SummaryLeft =
-            $"Всего предметов:   {total}\n" +
-            $"Обработано:        {done}\n" +
-            $"  напрямую:        {itemDone}\n" +
-            $"  через категорию: {catDone}\n" +
-            $"С итоговым шансом: {withChance}";
+        SummaryLeft = _ui.SummaryLeft(total, done, itemDone, catDone, withChance);
 
         int totalIns = _sqlImports.Values.Sum(x => x.Inserted);
         int totalUpd = _sqlImports.Values.Sum(x => x.Updated);
-        SummaryRight =
-            $"── Импорт SQL ──\n" +
-            $"Добавлено: {totalIns}\n" +
-            $"Обновлено: {totalUpd}\n" +
-            $"Итого:     {totalIns + totalUpd}";
+        SummaryRight = _ui.SummaryRight(totalIns, totalUpd);
     }
 
     // ──────────────────────────────────────────────────────────────────────────

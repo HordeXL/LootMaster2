@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using LootMaster.Helpers;
 using LootMaster.Services;
 using LootMaster.ViewModels;
 
@@ -25,9 +26,16 @@ public partial class MainWindow : Window
             ItemsGrid.Focus();
         };
 
+        _vm.LanguageChanged += () =>
+        {
+            ApplyColumnHeaders(_vm.UI);
+            _colSettings.Save(ItemsGrid, MainGridLeft, this);
+        };
+
         Loaded += (_, _) =>
         {
             _colSettings.Restore(ItemsGrid, MainGridLeft, this);
+            ApplyColumnHeaders(_vm.UI);
             ItemsGrid.Focus();
         };
 
@@ -38,6 +46,42 @@ public partial class MainWindow : Window
         NpcDetailGrid.SelectionChanged += OnNpcDetailSelectionChanged;
         NpcDetailGrid.MouseDoubleClick += OnNpcDetailDoubleClick;
         NpcListBox.SelectionChanged += (_, _) => ItemsGrid.Focus();
+    }
+
+    /// <summary>
+    /// Updates DataGrid column headers to match the current language.
+    /// Column persistence uses binding path as stable key, so headers can be changed freely.
+    /// </summary>
+    private void ApplyColumnHeaders(UIStrings ui)
+    {
+        SetColumnHeader(ItemsGrid,    "ItemName",      ui.ColItem);
+        SetColumnHeader(ItemsGrid,    "CategoryName",  ui.ColCategory);
+        SetColumnHeader(ItemsGrid,    "ItemGroup",     ui.ColGroupItem);
+        SetColumnHeader(ItemsGrid,    "ItemChance",    ui.ColChanceItem);
+        SetColumnHeader(ItemsGrid,    "CategoryGroup", ui.ColGroupCat);
+        SetColumnHeader(ItemsGrid,    "CategoryChance",ui.ColChanceCat);
+        SetColumnHeader(ItemsGrid,    "EffectiveGroup",ui.ColGroupEff);
+        SetColumnHeader(ItemsGrid,    "EffectiveChance",ui.ColChanceEff);
+        SetColumnHeader(ItemsGrid,    "DbGroup",       ui.ColGroupDb);
+        SetColumnHeader(ItemsGrid,    "DbChance",      ui.ColChanceDb);
+
+        SetColumnHeader(NpcDetailGrid,"ItemName",      ui.ColItem);
+        SetColumnHeader(NpcDetailGrid,"EffectiveGroup",ui.ColGroup);
+        SetColumnHeader(NpcDetailGrid,"EffectiveChance",ui.ColChance);
+    }
+
+    private static void SetColumnHeader(DataGrid grid, string bindingPath, string header)
+    {
+        foreach (var col in grid.Columns)
+        {
+            if (col is DataGridBoundColumn bc &&
+                bc.Binding is System.Windows.Data.Binding b &&
+                b.Path?.Path == bindingPath)
+            {
+                col.Header = header;
+                return;
+            }
+        }
     }
 
     private void OnNpcDetailSelectionChanged(object sender, SelectionChangedEventArgs e)
