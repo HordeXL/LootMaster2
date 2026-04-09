@@ -78,11 +78,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         // Commands
         OpenDbCommand = new RelayCommand(async () => await OpenDbAsync());
+        OpenLootDbCommand = new RelayCommand(async () => await OpenLootDbAsync());
         OpenJsonCommand = new RelayCommand(async () => await OpenJsonAsync());
         SaveProgressCommand = new RelayCommand(async () => await SaveProgressAsync());
         ExportCommand = new RelayCommand(async () => await ExportAsync(), () => _allRows.Count > 0);
         SyncDbCommand = new RelayCommand(async () => await SyncDbAsync(), () => _allRows.Count > 0);
-        ImportSqlCommand = new RelayCommand(async () => await ImportSqlAsync(), () => !string.IsNullOrEmpty(_progress.DbPath));
+        ImportSqlCommand = new RelayCommand(async () => await ImportSqlAsync(), () => !string.IsNullOrEmpty(EffectiveLootDbPath));
         ApplyItemCommand = new RelayCommand(ApplyItemSettings, () => _selectedItem is not null);
         ClearItemCommand = new RelayCommand(ClearItemSettings, () => _selectedItem is not null);
         ApplyAllFromDbCommand = new RelayCommand(ApplyAllFromDb, () => _allRows.Any(r => r.DbGroup.HasValue && r.DbChance.HasValue));
@@ -102,6 +103,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     // ──────────────────────────────────────────────────────────────────────────
 
     public ICommand OpenDbCommand { get; }
+    public ICommand OpenLootDbCommand { get; }
     public ICommand OpenJsonCommand { get; }
     public ICommand SaveProgressCommand { get; }
     public ICommand ExportCommand { get; }
@@ -187,16 +189,33 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>Returns loot DB path if set, otherwise falls back to main DB path.</summary>
+    private string EffectiveLootDbPath =>
+        !string.IsNullOrEmpty(_progress.LootDbPath) ? _progress.LootDbPath : _progress.DbPath;
+
     private async Task OpenDbAsync()
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Выбери SQLite базу",
+            Title = "Выбери SQLite базу (предметы, NPC, категории)",
             Filter = "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|Все файлы|*.*"
         };
         if (dlg.ShowDialog() != true) return;
         _progress.DbPath = dlg.FileName;
-        StatusText = $"База: {dlg.FileName}";
+        StatusText = $"База данных: {Path.GetFileName(dlg.FileName)}";
+        await TrySilentSave();
+    }
+
+    private async Task OpenLootDbAsync()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = "Выбери SQLite базу лута (loots, loot_groups, loot_pack_dropping_npcs)",
+            Filter = "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|Все файлы|*.*"
+        };
+        if (dlg.ShowDialog() != true) return;
+        _progress.LootDbPath = dlg.FileName;
+        StatusText = $"База лута: {Path.GetFileName(dlg.FileName)}";
         await TrySilentSave();
     }
 
@@ -255,7 +274,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             StatusText = $"JSON: {itemIds.Count} предметов, {npcIds.Count} NPC. Загружаем имена…";
 
-            var dbSvc = new DatabaseService(dbPath);
+            var dbSvc = new DatabaseService(dbPath, EffectiveLootDbPath);
 
             // 2. Load NPC names first (needed by LoadItemsAsync)
             _npcNames = await dbSvc.LoadNpcNamesAsync(npcIds, progress, ct);
@@ -713,7 +732,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         // Preview
-        var svc = new DbSyncService(_progress.DbPath);
+        var svc = new DbSyncService(EffectiveLootDbPath);
         DbSyncService.SyncPreview preview;
         try
         {
@@ -773,7 +792,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         StatusText = "Импорт SQL…";
         try
         {
-            var svc = new DbSyncService(_progress.DbPath);
+            var svc = new DbSyncService(EffectiveLootDbPath);
             var progress = new Progress<string>(msg => StatusText = msg);
             var result = await svc.ImportSqlFileAsync(dlg.FileName, progress);
             int updated = result.Replaced + result.Updated;

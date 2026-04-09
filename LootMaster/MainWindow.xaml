@@ -25,8 +25,11 @@
         ════════════════════════════════════════════════════════════════════ -->
         <ToolBarTray DockPanel.Dock="Top">
             <ToolBar>
-                <Button Content="Открыть SQLite базу"  Command="{Binding OpenDbCommand}"       Style="{StaticResource ToolbarButton}"/>
-                <Button Content="Открыть JSON дропа"   Command="{Binding OpenJsonCommand}"      Style="{StaticResource ToolbarButton}"/>
+                <Button Content="Открыть SQLite базу"     Command="{Binding OpenDbCommand}"       Style="{StaticResource ToolbarButton}"
+                        ToolTip="База с предметами, NPC, категориями (compact.sqlite3)"/>
+                <Button Content="Открыть БД лута"       Command="{Binding OpenLootDbCommand}"   Style="{StaticResource ToolbarButton}"
+                        ToolTip="База с таблицами лута: loots, loot_groups, loot_pack_dropping_npcs (compact.server.table.sqlite3)"/>
+                <Button Content="Открыть JSON дропа"    Command="{Binding OpenJsonCommand}"      Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
                 <Button Content="Сохранить прогресс"   Command="{Binding SaveProgressCommand}"  Style="{StaticResource ToolbarButton}"/>
                 <Button Content="Экспорт результата"   Command="{Binding ExportCommand}"        Style="{StaticResource ToolbarButton}"/>

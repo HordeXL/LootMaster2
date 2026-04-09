@@ -7,6 +7,11 @@ public class AppProgress
     [JsonPropertyName("db_path")]
     public string DbPath { get; set; } = "";
 
+    /// <summary>Path to the server.table DB with loot tables (loots, loot_groups, loot_pack_dropping_npcs).
+    /// If empty, DbPath is used for loot tables as well.</summary>
+    [JsonPropertyName("loot_db_path")]
+    public string LootDbPath { get; set; } = "";
+
     [JsonPropertyName("source_json_paths")]
     public List<string> SourceJsonPaths { get; set; } = new();
 

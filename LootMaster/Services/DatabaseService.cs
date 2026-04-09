@@ -8,9 +8,10 @@ namespace LootMaster.Services;
 /// Uses chunked IN clauses (500 per batch) to stay within SQLite variable limits.
 /// Localised names: Russian preferred, English fallback — same logic as lott parser.py.
 /// </summary>
-public sealed class DatabaseService(string dbPath)
+public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
 {
-    private readonly string _connStr = $"Data Source={dbPath};Mode=ReadOnly;";
+    private readonly string _connStr     = $"Data Source={dbPath};Mode=ReadOnly;";
+    private readonly string _lootConnStr = $"Data Source={lootDbPath ?? dbPath};Mode=ReadOnly;";
 
     // ──────────────────────────────────────────────────────────────────────────
     // Public API
@@ -58,12 +59,13 @@ public sealed class DatabaseService(string dbPath)
                 categoryNameMap[id] = catNames.TryGetValue(id, out var loc) && !string.IsNullOrEmpty(loc) ? loc : fallback;
             }
 
-            // 4. Load loot_pack_ids for each NPC
+            // 4. Load loot_pack_ids and loot data from loot DB (may be a separate file)
             var npcIdList = new List<int>(itemToNpcs.Values.SelectMany(s => s).Distinct());
-            var npcToPackId = LoadNpcPackIds(conn, npcIdList);
+            using var lootConn = OpenLootConnection();
+            var npcToPackId = LoadNpcPackIds(lootConn, npcIdList);
 
             // 5. Load existing loot assignments from loots table
-            var lootData = LoadLootData(conn, foundIds);
+            var lootData = LoadLootData(lootConn, foundIds);
 
             // 6. Build result
             Dictionary<int, ItemInfo> result = new(foundIds.Count);
@@ -199,6 +201,13 @@ public sealed class DatabaseService(string dbPath)
     private SqliteConnection OpenConnection()
     {
         var conn = new SqliteConnection(_connStr);
+        conn.Open();
+        return conn;
+    }
+
+    private SqliteConnection OpenLootConnection()
+    {
+        var conn = new SqliteConnection(_lootConnStr);
         conn.Open();
         return conn;
     }
