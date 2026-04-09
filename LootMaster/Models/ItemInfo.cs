@@ -17,4 +17,9 @@ public class ItemInfo
 
     /// <summary>Current drop chance from the loots table in percent (null if not found).</summary>
     public double? DbChance { get; init; }
+
+    public int?    DbMinAmount  { get; init; }
+    public int?    DbMaxAmount  { get; init; }
+    public int?    DbGradeId    { get; init; }
+    public bool?   DbAlwaysDrop { get; init; }
 }

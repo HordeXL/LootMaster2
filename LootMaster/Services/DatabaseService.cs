@@ -108,8 +108,12 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
                     NpcIds = npcIds,
                     NpcNames = npcNamesList,
                     LootPackIds = lootPackIds,
-                    DbGroup = loot?.Group,
-                    DbChance = loot?.Chance,
+                    DbGroup     = loot?.Group,
+                    DbChance    = loot?.Chance,
+                    DbMinAmount = loot?.MinAmount,
+                    DbMaxAmount = loot?.MaxAmount,
+                    DbGradeId   = loot?.GradeId,
+                    DbAlwaysDrop = loot?.AlwaysDrop,
                 };
             }
 
@@ -144,7 +148,7 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
 
-    private record LootEntry(int Group, double Chance);
+    private record LootEntry(int Group, double Chance, int MinAmount, int MaxAmount, int? GradeId, bool AlwaysDrop);
 
     /// <summary>Returns npc_id → loot_pack_id map from loot_pack_dropping_npcs.</summary>
     private static Dictionary<int, int> LoadNpcPackIds(SqliteConnection conn, IReadOnlyList<int> npcIds)
@@ -186,7 +190,7 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
             var placeholders = string.Join(',', Enumerable.Range(0, chunk.Count).Select(i => $"@p{i}"));
             using var cmd = conn.CreateCommand();
             cmd.CommandText = $"""
-                SELECT item_id, "group", drop_rate
+                SELECT item_id, "group", drop_rate, min_amount, max_amount, grade_id, always_drop
                 FROM loots
                 WHERE item_id IN ({placeholders})
                 ORDER BY item_id
@@ -199,9 +203,13 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
             {
                 int itemId = reader.GetInt32(0);
                 if (result.ContainsKey(itemId)) continue; // keep first
-                int grp = reader.GetInt32(1);
-                double chance = reader.GetInt32(2) / 100000.0;
-                result[itemId] = new LootEntry(grp, chance);
+                int grp        = reader.GetInt32(1);
+                double chance  = reader.GetInt32(2) / 100000.0;
+                int minAmount  = reader.IsDBNull(3) ? 1 : reader.GetInt32(3);
+                int maxAmount  = reader.IsDBNull(4) ? 1 : reader.GetInt32(4);
+                int? gradeId   = reader.IsDBNull(5) ? null : reader.GetInt32(5);
+                bool always    = !reader.IsDBNull(6) && reader.GetInt32(6) != 0;
+                result[itemId] = new LootEntry(grp, chance, minAmount, maxAmount, gradeId, always);
             }
         }
         return result;
