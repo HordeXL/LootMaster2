@@ -34,6 +34,7 @@
                 <Separator/>
                 <Button Content="Сохранить прогресс"   Command="{Binding SaveProgressCommand}"  Style="{StaticResource ToolbarButton}"/>
                 <Button Content="Экспорт результата"   Command="{Binding ExportCommand}"        Style="{StaticResource ToolbarButton}"/>
+                <Separator/>
                 <Button Content="Записать в БД"        Command="{Binding SyncDbCommand}"        Style="{StaticResource ToolbarButton}"/>
                 <Button Content="Импорт SQL в БД"      Command="{Binding ImportSqlCommand}"     Style="{StaticResource ToolbarButton}"/>
                 <Separator/>
