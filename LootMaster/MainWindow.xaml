@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:LootMaster.ViewModels"
         xmlns:cv="clr-namespace:LootMaster.Converters"
+        xmlns:h="clr-namespace:LootMaster.Helpers"
         Title="LootMaster 2.0 — Loot Group Editor"
         Icon="GameIcon.ico"
         Height="960" Width="1900"
@@ -130,6 +131,7 @@
                 <DataGrid.Resources>
                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"     Color="#3399FF"/>
                     <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
+                    <h:BindingProxy x:Key="Proxy" Data="{Binding}"/>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
                     <!-- Headers updated in code-behind when language changes -->
@@ -141,15 +143,15 @@
                     <DataGridTextColumn Header="NPC ID"
                                         Binding="{Binding NpcIdsText}"
                                         Width="120"
-                                        Visibility="{Binding DataContext.ShowNpcIdColumn,
-                                            RelativeSource={RelativeSource AncestorType=Window},
+                                        Visibility="{Binding Data.ShowNpcIdColumn,
+                                            Source={StaticResource Proxy},
                                             Converter={StaticResource BoolToVis}}"/>
 
                     <DataGridTextColumn Header="NPC"
                                         Binding="{Binding NpcNamesText}"
                                         Width="220"
-                                        Visibility="{Binding DataContext.ShowNpcNameColumn,
-                                            RelativeSource={RelativeSource AncestorType=Window},
+                                        Visibility="{Binding Data.ShowNpcNameColumn,
+                                            Source={StaticResource Proxy},
                                             Converter={StaticResource BoolToVis}}"/>
 
                     <DataGridTextColumn Header="Группа (предмет)"   Binding="{Binding ItemGroup,     Converter={StaticResource NullToStr}}" Width="110" CanUserSort="True"/>
