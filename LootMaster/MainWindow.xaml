@@ -228,6 +228,10 @@
                                         Command="{Binding ApplyAllFromDbCommand}"
                                         Padding="10,4" Margin="3,0"
                                         ToolTip="{Binding UI.BtnApplyAllTip}"/>
+                                <Button Content="{Binding UI.BtnClearAllFromDb}"
+                                        Command="{Binding ClearAllFromDbCommand}"
+                                        Padding="10,4" Margin="3,0"
+                                        ToolTip="{Binding UI.BtnClearAllTip}"/>
                             </StackPanel>
                         </Grid>
                     </GroupBox>

@@ -102,7 +102,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         ImportFromDbCommand = new RelayCommand(async () => await ImportFromDbAsync(), () => !string.IsNullOrEmpty(EffectiveLootDbPath));
         ApplyItemCommand = new RelayCommand(ApplyItemSettings, () => _selectedItem is not null);
         ClearItemCommand = new RelayCommand(ClearItemSettings, () => _selectedItem is not null);
-        ApplyAllFromDbCommand = new RelayCommand(ApplyAllFromDb, () => _allRows.Any(r => r.DbGroup.HasValue && r.DbChance.HasValue));
+        ApplyAllFromDbCommand  = new RelayCommand(ApplyAllFromDb,  () => _allRows.Any(r => r.DbGroup.HasValue && r.DbChance.HasValue));
+        ClearAllFromDbCommand  = new RelayCommand(ClearAllFromDb,  () => _allRows.Any(r => r.DbGroup.HasValue && r.ItemGroup == r.DbGroup));
         ShowGroupHelpCommand = new RelayCommand(ShowGroupHelp);
         ApplyCategoryCommand = new RelayCommand(ApplyCategorySettings, () => _selectedItem is not null);
         ClearCategoryCommand = new RelayCommand(ClearCategorySettings, () => _selectedItem is not null);
@@ -130,6 +131,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand ApplyItemCommand { get; }
     public ICommand ClearItemCommand { get; }
     public ICommand ApplyAllFromDbCommand { get; }
+    public ICommand ClearAllFromDbCommand { get; }
     public ICommand ShowGroupHelpCommand { get; }
     public ICommand ApplyCategoryCommand { get; }
     public ICommand ClearCategoryCommand { get; }
@@ -568,62 +570,51 @@ public sealed class MainViewModel : INotifyPropertyChanged
         StatusText = _ui.StatusAppliedFromDb(candidates.Count);
     }
 
-    private static void ShowGroupHelp()
+    private void ClearAllFromDb()
     {
-        MessageBox.Show(
-            """
-            КАК РАБОТАЮТ ГРУППЫ (group) В ТАБЛИЦЕ loots
-            ═══════════════════════════════════════════
+        var candidates = _allRows
+            .Where(r => r.DbGroup.HasValue && r.ItemGroup == r.DbGroup)
+            .ToList();
 
-            ГРУППА 0 — индивидуальный дроп
-            ──────────────────────────────
-            Каждый предмет из группы 0 проверяется
-            НЕЗАВИСИМО. Шанс выпадения = drop_rate
-            предмета. Могут выпасть несколько или
-            все предметы одновременно.
+        if (candidates.Count == 0)
+        {
+            MessageBox.Show(
+                _ui.IsRussian
+                    ? "Нет предметов, у которых item-level группа совпадает с Группой (БД)."
+                    : "No items whose item-level group matches Group (DB).",
+                _ui.IsRussian ? "Отменить из БД" : "Undo DB apply",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
 
-            Пример: 3 предмета с 50% → каждый
-            проверяется отдельно, могут выпасть все.
+        var confirm = MessageBox.Show(
+            _ui.IsRussian
+                ? $"Сбросить item-level группу и шанс у {candidates.Count} предмет(ов), у которых группа совпадает с Группой (БД)?"
+                : $"Reset item-level group and chance for {candidates.Count} item(s) whose group matches Group (DB)?",
+            _ui.IsRussian ? "Отменить из БД" : "Undo DB apply",
+            MessageBoxButton.OKCancel, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.OK) return;
 
-            ГРУППА 1, 2, 3... — "мешок лута"
-            ────────────────────────────────────
-            1. Сначала бросается кубик против
-               loot_groups.drop_rate этой группы.
-               Если провал → вся группа пропускается.
+        foreach (var row in candidates)
+        {
+            var ip = GetOrCreateItemProgress(row.ItemId);
+            ip.Group = null;
+            ip.Chance = null;
+            row.ItemProgress = ip;
+        }
 
-            2. Если группа сыграла → выбирается
-               ОДИН предмет из группы (по весу
-               drop_rate каждого предмета).
+        _ = TrySilentSave();
+        ItemsView.Refresh();
+        RefreshSummary();
+        StatusText = _ui.IsRussian
+            ? $"Сброшено {candidates.Count} предмет(ов)."
+            : $"Reset {candidates.Count} item(s).";
+    }
 
-            Реальный пример из БД (pack_id=9327):
-              • loot_groups: group_no=1, drop_rate=41666
-                → шанс открыть "мешок" = 0.42%
-              • loots: 952 предмета в group=1
-                с разными drop_rate (веса выбора)
-              → При убийстве NPC: сначала 0.42% шанс
-                что мешок откроется, затем из 952
-                предметов выпадает ровно ОДИН.
-
-            НЕСКОЛЬКО ГРУПП у одного pack_id:
-            ────────────────────────────────────
-            Каждая группа — отдельный независимый
-            "мешок". Все группы проверяются при
-            каждом убийстве. Может выпасть по
-            одному предмету из каждой группы.
-
-            ═══════════════════════════════════════════
-            ИТОГ:
-              group=0  → каждый предмет независимо
-              group=1+ → "мешок": сначала шанс открытия
-                         (loot_groups.drop_rate), затем
-                         1 предмет из группы по весам
-
-            drop_rate / 10 000 000 = шанс в долях
-            Пример: 500 000 / 10 000 000 = 5%
-            """,
-            "Справка: группы лута",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+    private void ShowGroupHelp()
+    {
+        MessageBox.Show(_ui.GroupHelpText, _ui.GroupHelpTitle,
+            MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void ToggleLanguage()

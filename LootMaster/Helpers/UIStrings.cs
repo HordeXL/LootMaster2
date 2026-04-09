@@ -105,10 +105,112 @@ public sealed class UIStrings
     public string ItemChanceLabel   => R("Шанс предмета:",          "Item chance:");
     public string BtnApply          => R("Применить",               "Apply");
     public string BtnReset          => R("Сбросить",                "Reset");
-    public string BtnApplyAllFromDb => R("Применить из БД ко всем", "Apply DB to all");
-    public string BtnApplyAllTip    => R("Применить Группу (БД) и Шанс (БД) как item-level значения для всех предметов, у которых ещё не задана группа",
-                                         "Apply Group (DB) and Chance (DB) as item-level values for all items without a manually set group");
+    public string BtnApplyAllFromDb  => R("Применить из БД ко всем", "Apply DB to all");
+    public string BtnApplyAllTip     => R("Применить Группу (БД) и Шанс (БД) как item-level значения для всех предметов, у которых ещё не задана группа",
+                                          "Apply Group (DB) and Chance (DB) as item-level values for all items without a manually set group");
+    public string BtnClearAllFromDb  => R("Отменить из БД",          "Undo DB apply");
+    public string BtnClearAllTip     => R("Сбросить item-level группу и шанс у всех предметов, у которых группа совпадает с Группой (БД) — отменяет действие «Применить из БД ко всем»",
+                                          "Reset item-level group and chance for all items whose group matches Group (DB) — undoes 'Apply DB to all'");
     public string GroupHelpTip      => R("Справка по группам лута", "Loot group help");
+    public string GroupHelpTitle    => R("Справка: группы лута",    "Help: loot groups");
+    public string GroupHelpText     => _ru ? """
+            КАК РАБОТАЮТ ГРУППЫ (group) В ТАБЛИЦЕ loots
+            ═══════════════════════════════════════════
+
+            ГРУППА 0 — индивидуальный дроп
+            ──────────────────────────────
+            Каждый предмет из группы 0 проверяется
+            НЕЗАВИСИМО. Шанс выпадения = drop_rate
+            предмета. Могут выпасть несколько или
+            все предметы одновременно.
+
+            Пример: 3 предмета с 50% → каждый
+            проверяется отдельно, могут выпасть все.
+
+            ГРУППА 1, 2, 3... — "мешок лута"
+            ────────────────────────────────────
+            1. Сначала бросается кубик против
+               loot_groups.drop_rate этой группы.
+               Если провал → вся группа пропускается.
+
+            2. Если группа сыграла → выбирается
+               ОДИН предмет из группы (по весу
+               drop_rate каждого предмета).
+
+            Реальный пример из БД (pack_id=9327):
+              • loot_groups: group_no=1, drop_rate=41666
+                → шанс открыть "мешок" = 0.42%
+              • loots: 952 предмета в group=1
+                с разными drop_rate (веса выбора)
+              → При убийстве NPC: сначала 0.42% шанс
+                что мешок откроется, затем из 952
+                предметов выпадает ровно ОДИН.
+
+            НЕСКОЛЬКО ГРУПП у одного pack_id:
+            ────────────────────────────────────
+            Каждая группа — отдельный независимый
+            "мешок". Все группы проверяются при
+            каждом убийстве. Может выпасть по
+            одному предмету из каждой группы.
+
+            ═══════════════════════════════════════════
+            ИТОГ:
+              group=0  → каждый предмет независимо
+              group=1+ → "мешок": сначала шанс открытия
+                         (loot_groups.drop_rate), затем
+                         1 предмет из группы по весам
+
+            drop_rate / 10 000 000 = шанс в долях
+            Пример: 500 000 / 10 000 000 = 5%
+            """ : """
+            HOW GROUPS WORK IN THE loots TABLE
+            ═══════════════════════════════════════════
+
+            GROUP 0 — individual drops
+            ──────────────────────────────
+            Each item in group 0 is checked
+            INDEPENDENTLY. Drop chance = the item's
+            drop_rate. Multiple or all items can drop
+            at the same time.
+
+            Example: 3 items at 50% → each is checked
+            separately; all three can drop at once.
+
+            GROUP 1, 2, 3... — "loot bag"
+            ────────────────────────────────────
+            1. First, a roll is made against
+               loot_groups.drop_rate for the group.
+               If it fails → the entire group is skipped.
+
+            2. If the group fires → exactly ONE item
+               is chosen from the group (weighted by
+               each item's drop_rate).
+
+            Real example from DB (pack_id=9327):
+              • loot_groups: group_no=1, drop_rate=41666
+                → 0.42% chance to open the "bag"
+              • loots: 952 items in group=1
+                with varying drop_rate (selection weights)
+              → On NPC kill: first a 0.42% chance the
+                bag opens, then exactly ONE item is
+                chosen from the 952.
+
+            MULTIPLE GROUPS for one pack_id:
+            ────────────────────────────────────
+            Each group is a separate, independent
+            "bag". All groups are rolled on every kill.
+            One item per group can drop per kill.
+
+            ═══════════════════════════════════════════
+            SUMMARY:
+              group=0  → each item checked independently
+              group=1+ → "bag": first an open chance
+                         (loot_groups.drop_rate), then
+                         1 item from the group by weight
+
+            drop_rate / 10 000 000 = chance as fraction
+            Example: 500 000 / 10 000 000 = 5%
+            """;
 
     // ── Category settings ─────────────────────────────────────────────────────
 
