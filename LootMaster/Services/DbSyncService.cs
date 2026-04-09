@@ -287,12 +287,6 @@ public sealed class DbSyncService(string dbPath)
     public record DbImportTableResult(string Table, int Rows);
 
     /// <summary>
-    /// Reads rows from the four loot tables of a source SQLite database and
-    /// the target (loot) database using upsert-by-id logic.
-    /// Tables: loot_actability_groups, loot_groups, loot_pack_dropping_npcs, loots.
-    /// Missing tables in the source are silently skipped.
-    /// </summary>
-    /// <summary>
     /// Generates an INSERT OR REPLACE SQL patch file from the four loot tables
     /// of a source SQLite database. Does NOT modify the target DB.
     /// Returns per-table row counts for preview.
@@ -431,14 +425,14 @@ public sealed class DbSyncService(string dbPath)
         return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     }
 
-    // INSERT INTO table (cols) VALUES (vals)
+    // INSERT [OR REPLACE|OR IGNORE|...] INTO table (cols) VALUES (vals)
     private static readonly Regex _insertWithColsRx = new(
-        @"INSERT\s+INTO\s+""?(\w+)""?\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$",
+        @"INSERT\s+(?:OR\s+\w+\s+)?INTO\s+""?(\w+)""?\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
-    // INSERT INTO table VALUES (vals)  — no column list
+    // INSERT [OR REPLACE|OR IGNORE|...] INTO table VALUES (vals)  — no column list
     private static readonly Regex _insertValuesOnlyRx = new(
-        @"INSERT\s+INTO\s+""?(\w+)""?\s+VALUES\s*\((.+)\)\s*;?\s*$",
+        @"INSERT\s+(?:OR\s+\w+\s+)?INTO\s+""?(\w+)""?\s+VALUES\s*\((.+)\)\s*;?\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
     /// <summary>
