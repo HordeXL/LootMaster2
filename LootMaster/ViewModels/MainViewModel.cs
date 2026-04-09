@@ -23,8 +23,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private AppProgress _progress = new();
     private readonly ProgressService _progressSvc;
     private readonly ColumnSettingsService _colSvc;
-    private bool _preferRussian = true;
-    private UIStrings _ui = new(true);
+    private int _language = 0; // 0=RU, 1=EN, 2=ZH
+    private UIStrings _ui = new(0);
 
     // All item rows (source)
     private readonly ObservableCollection<ItemRow> _allRows = new();
@@ -90,8 +90,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         string colFile = Path.Combine(AppContext.BaseDirectory, "Data", "column-settings.json");
         _colSvc = new ColumnSettingsService(colFile);
-        _preferRussian = _colSvc.LoadPreferRussian();
-        _ui = new UIStrings(_preferRussian);
+        _language = _colSvc.LoadLanguage();
+        _ui = new UIStrings(_language);
         StatusText = _ui.InitialStatus;
 
         ItemsView = CollectionViewSource.GetDefaultView(_allRows);
@@ -168,8 +168,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool ShowNpcIdColumn { get => _showNpcIdColumn; set => Set(ref _showNpcIdColumn, value); }
     public bool ShowNpcNameColumn { get => _showNpcNameColumn; set => Set(ref _showNpcNameColumn, value); }
     public UIStrings UI { get => _ui; private set => Set(ref _ui, value); }
-    public bool PreferRussian { get => _preferRussian; set => Set(ref _preferRussian, value); }
-    public string LanguageLabel => _preferRussian ? "RU" : "EN";
+    public int Language { get => _language; set => Set(ref _language, value); }
+    public string LanguageLabel => _language == 0 ? "RU" : (_language == 1 ? "EN" : "ZH");
 
     public ItemRow? SelectedItem
     {
@@ -337,7 +337,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             StatusText = $"JSON: {itemIds.Count} предметов, {npcIds.Count} NPC. Загружаем имена…";
 
-            var dbSvc = new DatabaseService(dbPath, EffectiveLootDbPath, _preferRussian);
+            var dbSvc = new DatabaseService(dbPath, EffectiveLootDbPath, _language);
 
             // 2. Load NPC names first (needed by LoadItemsAsync)
             _npcNames = await dbSvc.LoadNpcNamesAsync(npcIds, progress, ct);
@@ -657,11 +657,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void ToggleLanguage()
     {
-        _preferRussian = !_preferRussian;
-        _ui = new UIStrings(_preferRussian);
-        _colSvc.SavePreferRussian(_preferRussian);
+        _language = (_language + 1) % 3; // 0=RU → 1=EN → 2=ZH → 0=RU
+        _ui = new UIStrings(_language);
+        _colSvc.SaveLanguage(_language);
 
-        OnPropertyChanged(nameof(PreferRussian));
+        OnPropertyChanged(nameof(Language));
         OnPropertyChanged(nameof(LanguageLabel));
         OnPropertyChanged(nameof(UI));
         OnPropertyChanged(nameof(NpcListLabelText));

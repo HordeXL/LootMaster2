@@ -8,7 +8,7 @@ namespace LootMaster.Services;
 /// Uses chunked IN clauses (500 per batch) to stay within SQLite variable limits.
 /// Localised names: Russian preferred, English fallback — same logic as lott parser.py.
 /// </summary>
-public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bool preferRussian = true)
+public sealed class DatabaseService(string dbPath, string? lootDbPath = null, int language = 0)
 {
     private readonly string _connStr     = $"Data Source={dbPath};Mode=ReadOnly;";
     private readonly string _lootConnStr = $"Data Source={lootDbPath ?? dbPath};Mode=ReadOnly;";
@@ -44,13 +44,13 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
 
             // 2. Localised item names
             progress?.Report("Загружаю названия предметов…");
-            var itemNames = GetLocalizedMap(conn, foundIds, "items", "name", preferRussian);
+            var itemNames = GetLocalizedMap(conn, foundIds, "items", "name", language);
 
             // 3. Load categories
             progress?.Report("Загружаю категории…");
             var catIdList = new List<int>(categoryIds);
             var catRows = QueryById(conn, "SELECT id, name FROM item_categories", catIdList);
-            var catNames = GetLocalizedMap(conn, catIdList, "item_categories", "name", preferRussian);
+            var catNames = GetLocalizedMap(conn, catIdList, "item_categories", "name", language);
 
             Dictionary<int, string> categoryNameMap = [];
             foreach (var (id, row) in catRows)
@@ -132,7 +132,7 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
             progress?.Report("Загружаю NPC из БД…");
 
             var rows = QueryById(conn, "SELECT id, name FROM npcs", npcIds);
-            var locMap = GetLocalizedMap(conn, npcIds, "npcs", "name", preferRussian);
+            var locMap = GetLocalizedMap(conn, npcIds, "npcs", "name", language);
 
             Dictionary<int, string> result = new(rows.Count);
             foreach (var (id, row) in rows)
@@ -272,7 +272,7 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
         IReadOnlyList<int> ids,
         string tblName,
         string tblColumnName,
-        bool preferRussian = true)
+        int language = 0)
     {
         Dictionary<int, string> result = new(ids.Count);
         if (ids.Count == 0) return result;
@@ -303,7 +303,9 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, bo
 
                 string? ru = reader.IsDBNull(1) ? null : reader.GetString(1);
                 string? en = reader.IsDBNull(2) ? null : reader.GetString(2);
-                result[idx] = preferRussian
+
+                // language: 0=RU, 1=EN, 2=ZH (ZH falls back to EN since DB has no Chinese)
+                result[idx] = language == 0
                     ? (!string.IsNullOrEmpty(ru) ? ru : (en ?? ""))
                     : (!string.IsNullOrEmpty(en) ? en : (ru ?? ""));
             }

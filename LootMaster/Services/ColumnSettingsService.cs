@@ -20,7 +20,7 @@ public sealed class ColumnSettingsService(string filePath)
         public double? WindowWidth { get; set; }
         public double? WindowHeight { get; set; }
         public bool WindowMaximized { get; set; }
-        public bool PreferRussian { get; set; } = true;
+        public int Language { get; set; } = 0; // 0=RU, 1=EN, 2=ZH
     }
 
     public sealed class ColumnState
@@ -100,15 +100,15 @@ public sealed class ColumnSettingsService(string filePath)
             ordered[i].DisplayIndex = i;
     }
 
-    public bool LoadPreferRussian()
+    public int LoadLanguage()
     {
-        return LoadRaw()?.PreferRussian ?? true;
+        return LoadRaw()?.Language ?? 0;
     }
 
-    public void SavePreferRussian(bool value)
+    public void SaveLanguage(int value)
     {
         var settings = LoadRaw() ?? new Settings();
-        settings.PreferRussian = value;
+        settings.Language = value;
         string dir = Path.GetDirectoryName(filePath)!;
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
         File.WriteAllText(filePath, JsonSerializer.Serialize(settings, _opts));
