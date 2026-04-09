@@ -283,6 +283,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _itemsData = await dbSvc.LoadItemsAsync(itemIds, parseResult.ItemToNpcs, _npcNames, parseResult.DoodadToLootPack, progress, ct);
             _npcToItems = parseResult.NpcToItems;
 
+            // Warn if loot tables were missing (all LootPackIds and DbGroup/DbChance will be empty)
+            bool lootMissing = _itemsData.Values.All(i => i.LootPackIds.Count == 0 && i.DbGroup == null);
+            if (lootMissing && _itemsData.Count > 0 && string.IsNullOrEmpty(_progress.LootDbPath))
+                MessageBox.Show(
+                    "Лут-таблицы (loots, loot_pack_dropping_npcs) не найдены в основной базе.\n\n" +
+                    "Если они находятся в отдельном файле (например compact.server.table.sqlite3),\n" +
+                    "нажми кнопку «Открыть БД лута» на панели инструментов.",
+                    "Нет данных лута", MessageBoxButton.OK, MessageBoxImage.Warning);
+
             // 4. Populate rows on UI thread
             foreach (var id in _itemsData.Keys.OrderBy(x => x))
             {

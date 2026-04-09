@@ -62,10 +62,19 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null)
             // 4. Load loot_pack_ids and loot data from loot DB (may be a separate file)
             var npcIdList = new List<int>(itemToNpcs.Values.SelectMany(s => s).Distinct());
             using var lootConn = OpenLootConnection();
-            var npcToPackId = LoadNpcPackIds(lootConn, npcIdList);
-
-            // 5. Load existing loot assignments from loots table
-            var lootData = LoadLootData(lootConn, foundIds);
+            Dictionary<int, int> npcToPackId;
+            Dictionary<int, LootEntry> lootData;
+            try
+            {
+                npcToPackId = LoadNpcPackIds(lootConn, npcIdList);
+                lootData = LoadLootData(lootConn, foundIds);
+            }
+            catch (SqliteException ex) when (ex.Message.Contains("no such table"))
+            {
+                progress?.Report($"⚠ Лут-таблицы не найдены в БД лута: {ex.Message.Split('\'')[1]}. Выбери БД лута.");
+                npcToPackId = [];
+                lootData = [];
+            }
 
             // 6. Build result
             Dictionary<int, ItemInfo> result = new(foundIds.Count);
