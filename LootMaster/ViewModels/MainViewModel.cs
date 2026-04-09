@@ -218,10 +218,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     // Summary text shown in the summary panel
     private string _summaryLeft = "";
-    private string _summaryRight = "";
+    private string _summaryRightSql = "";
+    private string _summaryRightDb  = "";
     // key = filename, value = cumulative totals for that file
-    public string SummaryLeft  { get => _summaryLeft;  private set => Set(ref _summaryLeft,  value); }
-    public string SummaryRight { get => _summaryRight; private set => Set(ref _summaryRight, value); }
+    public string SummaryLeft      { get => _summaryLeft;      private set => Set(ref _summaryLeft,      value); }
+    public string SummaryRightSql  { get => _summaryRightSql;  private set => Set(ref _summaryRightSql,  value); }
+    public string SummaryRightDb   { get => _summaryRightDb;   private set => Set(ref _summaryRightDb,   value); }
 
     // ──────────────────────────────────────────────────────────────────────────
     // Loading
@@ -1034,7 +1036,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         int sqlUpd = _progress.SqlImports.Values.Sum(x => x.Updated);
         int dbIns  = _progress.DbImports.Values.Sum(x => x.Inserted);
         int dbUpd  = _progress.DbImports.Values.Sum(x => x.Updated);
-        SummaryRight = _ui.SummaryRight(sqlIns, sqlUpd, dbIns, dbUpd);
+        SummaryRightSql = _ui.SummaryRightSql(sqlIns, sqlUpd);
+        SummaryRightDb  = _ui.SummaryRightDb(dbIns,  dbUpd);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
