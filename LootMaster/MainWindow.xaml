@@ -30,14 +30,19 @@
                 <Button Content="{Binding UI.OpenLootDb}" Command="{Binding OpenLootDbCommand}" Style="{StaticResource ToolbarButton}"
                         ToolTip="{Binding UI.OpenLootDbTip}"/>
                 <Separator/>
-                <Button Content="{Binding UI.OpenJson}"   Command="{Binding OpenJsonCommand}"   Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.OpenJson}"   Command="{Binding OpenJsonCommand}"   Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.OpenJsonTip}"/>
                 <Separator/>
-                <Button Content="{Binding UI.SaveProgress}" Command="{Binding SaveProgressCommand}" Style="{StaticResource ToolbarButton}"/>
-                <Button Content="{Binding UI.Export}"       Command="{Binding ExportCommand}"       Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.SaveProgress}" Command="{Binding SaveProgressCommand}" Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.SaveProgressTip}"/>
+                <Button Content="{Binding UI.Export}"       Command="{Binding ExportCommand}"       Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.ExportTip}"/>
                 <Separator/>
-                <Button Content="{Binding UI.WriteToDb}"  Command="{Binding SyncDbCommand}"    Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.WriteToDb}"  Command="{Binding SyncDbCommand}"    Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.WriteTip}"/>
                 <Separator/>
-                <Button Content="{Binding UI.ImportSql}"  Command="{Binding ImportSqlCommand}" Style="{StaticResource ToolbarButton}"/>
+                <Button Content="{Binding UI.ImportSql}"  Command="{Binding ImportSqlCommand}" Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.ImportSqlTip}"/>
                 <Separator/>
                 <TextBlock Text="{Binding UI.Search}" VerticalAlignment="Center" Margin="4,0"/>
                 <TextBox   Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -45,16 +50,20 @@
                 <Separator/>
                 <CheckBox  Content="{Binding UI.OnlyUnproc}"
                            IsChecked="{Binding OnlyUnprocessed}"
+                           ToolTip="{Binding UI.OnlyUnprocTip}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <CheckBox  Content="{Binding UI.HlCategories}"
                            IsChecked="{Binding HighlightCategoryGroup}"
+                           ToolTip="{Binding UI.HlCatTip}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <Separator/>
                 <CheckBox  Content="{Binding UI.ShowNpcId}"
                            IsChecked="{Binding ShowNpcIdColumn}"
+                           ToolTip="{Binding UI.ShowNpcIdTip}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <CheckBox  Content="{Binding UI.ShowNpcNames}"
                            IsChecked="{Binding ShowNpcNameColumn}"
+                           ToolTip="{Binding UI.ShowNpcNamesTip}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <Separator/>
                 <Button Content="{Binding LanguageLabel}"
@@ -206,9 +215,11 @@
                             <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                         Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button Content="{Binding UI.BtnApply}" Command="{Binding ApplyItemCommand}"
-                                        Style="{StaticResource ToolbarButton}"/>
+                                        Style="{StaticResource ToolbarButton}"
+                                        ToolTip="{Binding UI.BtnApplyTip}"/>
                                 <Button Content="{Binding UI.BtnReset}" Command="{Binding ClearItemCommand}"
-                                        Style="{StaticResource ToolbarButton}"/>
+                                        Style="{StaticResource ToolbarButton}"
+                                        ToolTip="{Binding UI.BtnResetItemTip}"/>
                                 <Button Content="{Binding UI.BtnApplyAllFromDb}"
                                         Command="{Binding ApplyAllFromDbCommand}"
                                         Padding="10,4" Margin="3,0"
@@ -241,9 +252,11 @@
                             <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                         Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button Content="{Binding UI.BtnApplyCat}" Command="{Binding ApplyCategoryCommand}"
-                                        Padding="10,4" Margin="3,0"/>
+                                        Padding="10,4" Margin="3,0"
+                                        ToolTip="{Binding UI.BtnApplyCatTip}"/>
                                 <Button Content="{Binding UI.BtnReset}" Command="{Binding ClearCategoryCommand}"
-                                        Style="{StaticResource ToolbarButton}"/>
+                                        Style="{StaticResource ToolbarButton}"
+                                        ToolTip="{Binding UI.BtnResetCatTip}"/>
                             </StackPanel>
                         </Grid>
                     </GroupBox>
@@ -251,9 +264,12 @@
                     <!-- Navigation -->
                     <GroupBox Header="{Binding UI.GbNavigation}" Style="{StaticResource SectionFrame}">
                         <WrapPanel>
-                            <Button Content="{Binding UI.BtnPrev}"      Command="{Binding PrevCommand}"            Style="{StaticResource ToolbarButton}"/>
-                            <Button Content="{Binding UI.BtnNext}"      Command="{Binding NextCommand}"            Style="{StaticResource ToolbarButton}"/>
-                            <Button Content="{Binding UI.BtnNextUnproc}" Command="{Binding NextUnprocessedCommand}" Style="{StaticResource ToolbarButton}"/>
+                            <Button Content="{Binding UI.BtnPrev}"       Command="{Binding PrevCommand}"            Style="{StaticResource ToolbarButton}"
+                                    ToolTip="{Binding UI.BtnPrevTip}"/>
+                            <Button Content="{Binding UI.BtnNext}"       Command="{Binding NextCommand}"            Style="{StaticResource ToolbarButton}"
+                                    ToolTip="{Binding UI.BtnNextTip}"/>
+                            <Button Content="{Binding UI.BtnNextUnproc}" Command="{Binding NextUnprocessedCommand}" Style="{StaticResource ToolbarButton}"
+                                    ToolTip="{Binding UI.BtnNextUnprocTip}"/>
                         </WrapPanel>
                     </GroupBox>
 

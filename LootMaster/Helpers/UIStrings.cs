@@ -34,6 +34,44 @@ public sealed class UIStrings
     public string LangTip       => R("Переключить язык названий предметов и NPC (RU / EN)",
                                      "Toggle language for item and NPC names (RU / EN)");
 
+    // ── Toolbar tooltips ──────────────────────────────────────────────────────
+
+    public string OpenJsonTip      => R("Выбери один или несколько JSON-файлов дропа. Поддерживаются форматы NPC-лута (npc_id) и Doodad-лута (doodad_id + loot_pack_id)",
+                                        "Select one or more drop JSON files. Supports NPC loot (npc_id) and Doodad loot (doodad_id + loot_pack_id) formats");
+    public string SaveProgressTip  => R("Сохранить текущий прогресс в файл (Ctrl+S). Прогресс также сохраняется автоматически после каждого изменения",
+                                        "Save current progress to file (Ctrl+S). Progress is also auto-saved after every change");
+    public string ExportTip        => R("Экспортировать итоговые данные в JSON-файл для использования в эмуляторе сервера",
+                                        "Export final data to a JSON file for use in the server emulator");
+    public string WriteTip         => R("Записать все назначенные группы и шансы напрямую в SQLite-базу лута (upsert таблиц loots и loot_groups). Перед записью будет показан предварительный просмотр",
+                                        "Write all assigned groups and chances directly to the SQLite loot DB (upsert of loots and loot_groups). A preview will be shown before writing");
+    public string ImportSqlTip     => R("Выполнить SQL-файл(ы) в базу данных лута. Поддерживаются обычный SQL и дампы Navicat. Существующие строки обновляются, новые добавляются",
+                                        "Execute SQL file(s) into the loot database. Supports standard SQL and Navicat dumps. Existing rows are updated, new ones inserted");
+    public string OnlyUnprocTip    => R("Скрыть предметы, которым уже назначена группа (зелёные и жёлтые строки)",
+                                        "Hide items that already have a group assigned (green and yellow rows)");
+    public string HlCatTip         => R("Подсвечивать жёлтым строки, у которых группа унаследована от категории (не задана напрямую для предмета)",
+                                        "Highlight in yellow rows whose group is inherited from the category (not set directly on the item)");
+    public string ShowNpcIdTip     => R("Показывать колонку с ID всех NPC, у которых падает предмет",
+                                        "Show column with IDs of all NPCs that drop the item");
+    public string ShowNpcNamesTip  => R("Показывать колонку с именами всех NPC, у которых падает предмет",
+                                        "Show column with names of all NPCs that drop the item");
+
+    // ── Right panel tooltips ──────────────────────────────────────────────────
+
+    public string BtnApplyTip      => R("Сохранить введённые группу и шанс для выбранного предмета. Строка станет зелёной",
+                                        "Save the entered group and chance for the selected item. The row will turn green");
+    public string BtnResetItemTip  => R("Сбросить индивидуальную настройку предмета. Если для категории задана группа — предмет унаследует её (жёлтый), иначе станет белым",
+                                        "Reset the item-level setting. If the category has a group set, the item inherits it (yellow), otherwise it becomes white");
+    public string BtnApplyCatTip   => R("Применить группу и шанс ко всем предметам этой категории. Предметы с индивидуальной настройкой не затрагиваются",
+                                        "Apply group and chance to all items in this category. Items with individual settings are not affected");
+    public string BtnResetCatTip   => R("Сбросить настройку категории. Предметы, у которых нет индивидуальной настройки, станут белыми",
+                                        "Reset the category setting. Items without an individual setting will turn white");
+    public string BtnPrevTip       => R("Перейти к предыдущему предмету в отфильтрованном списке",
+                                        "Go to the previous item in the filtered list");
+    public string BtnNextTip       => R("Перейти к следующему предмету в отфильтрованном списке",
+                                        "Go to the next item in the filtered list");
+    public string BtnNextUnprocTip => R("Перейти к ближайшему предмету, которому ещё не назначена группа",
+                                        "Go to the nearest item that does not yet have a group assigned");
+
     // ── DataGrid column headers ───────────────────────────────────────────────
 
     public string ColItem       => R("Предмет",             "Item");
