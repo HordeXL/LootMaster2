@@ -15,7 +15,7 @@ public sealed class UIStrings
 
     // ── Toolbar ───────────────────────────────────────────────────────────────
 
-    public string OpenDb        => R("Открыть SQLite базу",  "Open SQLite DB");
+    public string OpenDb        => R("Открыть БД",  "Open DB");
     public string OpenDbTip     => R("База с предметами, NPC, категориями (compact.sqlite3)",
                                      "DB with items, NPCs, categories (compact.sqlite3)");
     public string OpenLootDb    => R("Открыть БД лута",      "Open Loot DB");
