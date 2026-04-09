@@ -332,9 +332,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         // Populate editor — prefer saved value, then DB value, then default
         ItemGroupText  = row.ItemGroup?.ToString()  ?? row.DbGroup?.ToString()  ?? "0";
-        ItemChanceText = row.ItemChance?.ToString() ?? row.DbChance?.ToString("G") ?? "100.0";
+        ItemChanceText = row.ItemChance?.ToString("0.######") ?? row.DbChance?.ToString("0.######") ?? "100.0";
         CategoryGroupText  = row.CategoryGroup?.ToString()  ?? "0";
-        CategoryChanceText = row.CategoryChance?.ToString() ?? "100.0";
+        CategoryChanceText = row.CategoryChance?.ToString("0.######") ?? "100.0";
 
         RefreshNpcPanel();
     }
