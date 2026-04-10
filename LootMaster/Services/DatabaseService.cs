@@ -150,6 +150,105 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, in
 
     private record LootEntry(int Group, double Chance, int MinAmount, int MaxAmount, int? GradeId, bool AlwaysDrop);
 
+    public record NpcDropRecord
+    {
+        public int NpcId { get; init; }
+        public List<ItemDropRecord> Items { get; init; } = [];
+    }
+
+    public record ItemDropRecord
+    {
+        public int ItemId { get; init; }
+    }
+
+    /// <summary>
+    /// Extracts all NPC drop data from loot_pack_dropping_npcs and loots tables.
+    /// </summary>
+    public async Task<List<NpcDropRecord>> ExtractNpcDropsAsync(IProgress<string>? progress = null, CancellationToken ct = default)
+    {
+        return await Task.Run(() =>
+        {
+            using var conn = OpenLootConnection();
+            
+            // 1. Load all npc_id -> loot_pack_id mappings
+            progress?.Report("正在读取 NPC 掉落包映射...");
+            var npcToPacks = new Dictionary<int, HashSet<int>>();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT npc_id, loot_pack_id FROM loot_pack_dropping_npcs";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    int npcId = reader.GetInt32(0);
+                    int packId = reader.GetInt32(1);
+                    if (!npcToPacks.TryGetValue(npcId, out var packs))
+                    {
+                        packs = new HashSet<int>();
+                        npcToPacks[npcId] = packs;
+                    }
+                    packs.Add(packId);
+                }
+            }
+
+            if (npcToPacks.Count == 0) return [];
+
+            // 2. Collect all unique pack IDs
+            var allPackIds = npcToPacks.Values.SelectMany(p => p).Distinct().ToList();
+            
+            // 3. Load all items for these packs
+            progress?.Report($"正在读取 {allPackIds.Count} 个掉落包的物品数据...");
+            var packToItems = new Dictionary<int, HashSet<int>>();
+            foreach (var chunk in Chunked(allPackIds, 500))
+            {
+                var placeholders = string.Join(',', Enumerable.Range(0, chunk.Count).Select(i => $"@p{i}"));
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT loot_pack_id, item_id FROM loots WHERE loot_pack_id IN ({placeholders})";
+                for (int i = 0; i < chunk.Count; i++)
+                    cmd.Parameters.AddWithValue($"@p{i}", chunk[i]);
+
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    int packId = reader.GetInt32(0);
+                    int itemId = reader.GetInt32(1);
+                    if (!packToItems.TryGetValue(packId, out var items))
+                    {
+                        items = new HashSet<int>();
+                        packToItems[packId] = items;
+                    }
+                    items.Add(itemId);
+                }
+            }
+
+            // 4. Aggregate by NPC
+            progress?.Report("正在聚合数据...");
+            var result = new List<NpcDropRecord>();
+            foreach (var kvp in npcToPacks.OrderBy(x => x.Key))
+            {
+                var npcId = kvp.Key;
+                var itemIds = new HashSet<int>();
+                foreach (var packId in kvp.Value)
+                {
+                    if (packToItems.TryGetValue(packId, out var items))
+                    {
+                        foreach (var itemId in items) itemIds.Add(itemId);
+                    }
+                }
+
+                if (itemIds.Count > 0)
+                {
+                    result.Add(new NpcDropRecord
+                    {
+                        NpcId = npcId,
+                        Items = itemIds.OrderBy(id => id).Select(id => new ItemDropRecord { ItemId = id }).ToList()
+                    });
+                }
+            }
+
+            return result;
+        }, ct);
+    }
+
     /// <summary>Returns npc_id → loot_pack_id map from loot_pack_dropping_npcs.</summary>
     private static Dictionary<int, int> LoadNpcPackIds(SqliteConnection conn, IReadOnlyList<int> npcIds)
     {
@@ -280,8 +379,17 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, in
         foreach (var chunk in Chunked(ids, 500))
         {
             var placeholders = string.Join(',', System.Linq.Enumerable.Range(0, chunk.Count).Select(i => $"@p{i}"));
+            
+            // Dynamic column selection based on language mode: 0=RU, 1=EN, 2=ZH
+            string selectColumns = language switch
+            {
+                2 => "idx, zh_cn, en_us",      // ZH: prefer Chinese, fallback to English
+                1 => "idx, en_us, ru",          // EN: prefer English, fallback to Russian
+                _ => "idx, ru, en_us"            // RU: prefer Russian, fallback to English
+            };
+
             string sql = $"""
-                SELECT idx, ru, en_us
+                SELECT {selectColumns}
                 FROM localized_texts
                 WHERE tbl_name = @tbl
                   AND tbl_column_name = @col
@@ -301,13 +409,10 @@ public sealed class DatabaseService(string dbPath, string? lootDbPath = null, in
                 int idx = reader.GetInt32(0);
                 if (result.ContainsKey(idx)) continue; // keep first (ORDER BY id DESC = most recent)
 
-                string? ru = reader.IsDBNull(1) ? null : reader.GetString(1);
-                string? en = reader.IsDBNull(2) ? null : reader.GetString(2);
+                string? primary = reader.IsDBNull(1) ? null : reader.GetString(1);
+                string? secondary = reader.IsDBNull(2) ? null : reader.GetString(2);
 
-                // language: 0=RU, 1=EN, 2=ZH (ZH falls back to EN since DB has no Chinese)
-                result[idx] = language == 0
-                    ? (!string.IsNullOrEmpty(ru) ? ru : (en ?? ""))
-                    : (!string.IsNullOrEmpty(en) ? en : (ru ?? ""));
+                result[idx] = !string.IsNullOrEmpty(primary) ? primary : (secondary ?? "");
             }
         }
         return result;

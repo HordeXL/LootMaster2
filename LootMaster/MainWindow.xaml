@@ -34,6 +34,9 @@
                 <Button Content="{Binding UI.OpenJson}"   Command="{Binding OpenJsonCommand}"   Style="{StaticResource ToolbarButton}"
                         ToolTip="{Binding UI.OpenJsonTip}"/>
                 <Separator/>
+                <Button Content="{Binding UI.ExtractNpcDrops}" Command="{Binding ExtractNpcDropsCommand}" Style="{StaticResource ToolbarButton}"
+                        ToolTip="{Binding UI.ExtractNpcDropsTip}"/>
+                <Separator/>
                 <Button Content="{Binding UI.SaveProgress}" Command="{Binding SaveProgressCommand}" Style="{StaticResource ToolbarButton}"
                         ToolTip="{Binding UI.SaveProgressTip}"/>
                 <Button Content="{Binding UI.Export}"       Command="{Binding ExportCommand}"       Style="{StaticResource ToolbarButton}"

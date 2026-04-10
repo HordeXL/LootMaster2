@@ -34,6 +34,11 @@ public sealed class UIStrings
     public string ImportFromDbTip => T("Сравнить другую SQLite базу с текущей БД лута и создать SQL-патч-файл (INSERT/UPDATE для loots и loot_groups)",
                                        "Compare another SQLite database with the current loot DB and generate an SQL patch file (INSERT/UPDATE for loots and loot_groups)",
                                        "将另一个SQLite数据库与当前战利品数据库比较，生成SQL补丁文件 (对loots和loot_groups进行INSERT/UPDATE)");
+    public string ExtractNpcDrops => T("Извлечь NPC дроп", "Extract NPC Drops", "提取NPC掉落");
+    public string ExtractNpcDropsTip => T(
+        "Извлечь данные о дропе NPC из базы данных и сохранить в JSON файл...",
+        "Extract NPC drop data from database and save to JSON file...",
+        "从数据库中提取NPC掉落数据并保存为JSON文件格式...");
     public string Search        => T("Поиск:",               "Search:", "搜索:");
     public string OnlyUnproc    => T("Только необработанные","Unprocessed only", "仅未处理");
     public string HlCategories  => T("Подсвечивать категории","Highlight categories", "高亮分类");
@@ -41,7 +46,7 @@ public sealed class UIStrings
     public string ShowNpcNames  => T("Кол. NPC имена",       "Show NPC names", "显示NPC名称");
     public string LangTip       => T("Переключить язык названий предметов и NPC (RU / EN / ZH)",
                                      "Toggle language for item and NPC names (RU / EN / ZH)",
-                                     "切换物品和NPC名称的语言 (RU / EN / ZH)");
+                                     "切换物品和NPC名称的语言，以及数据库内容的语言 (RU / EN / ZH)");
 
     // ── Toolbar tooltips ──────────────────────────────────────────────────────
 

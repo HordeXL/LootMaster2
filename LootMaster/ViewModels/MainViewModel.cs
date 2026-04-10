@@ -118,6 +118,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         NextUnprocessedCommand = new RelayCommand(SelectNextUnprocessed);
         JumpToNpcItemCommand = new RelayCommand(JumpToSelectedNpcItem);
         ToggleLanguageCommand = new RelayCommand(ToggleLanguage);
+        ExtractNpcDropsCommand = new RelayCommand(async () => await ExtractNpcDropsAsync(), () => !string.IsNullOrEmpty(EffectiveLootDbPath));
 
         _ = RestoreSessionAsync();
     }
@@ -146,6 +147,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand NextUnprocessedCommand { get; }
     public ICommand JumpToNpcItemCommand { get; }
     public ICommand ToggleLanguageCommand { get; }
+    public ICommand ExtractNpcDropsCommand { get; }
 
     // ──────────────────────────────────────────────────────────────────────────
     // Bindable properties
@@ -1017,6 +1019,62 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 _ui.PatchErrorTitle,
                 MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusImportDbError;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ExtractNpcDropsAsync()
+    {
+        if (string.IsNullOrEmpty(EffectiveLootDbPath) || !File.Exists(EffectiveLootDbPath))
+        {
+            MessageBox.Show("请先打开掉落数据库。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var dlg = new SaveFileDialog
+        {
+            Title = "保存 NPC 掉落数据",
+            DefaultExt = ".json",
+            Filter = "JSON (*.json)|*.json|所有文件|*.*",
+            FileName = "npc_drops.json"
+        };
+
+        if (dlg.ShowDialog() != true) return;
+
+        IsLoading = true;
+        try
+        {
+            var dbSvc = new DatabaseService(_progress.DbPath ?? EffectiveLootDbPath, EffectiveLootDbPath, _language);
+            var progress = new Progress<string>(msg => StatusText = msg);
+            var drops = await dbSvc.ExtractNpcDropsAsync(progress);
+
+            if (drops.Count == 0)
+            {
+                MessageBox.Show("数据库中未找到 NPC 掉落记录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText = "提取完成：未找到数据";
+                return;
+            }
+
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(drops, jsonOptions);
+            await File.WriteAllTextAsync(dlg.FileName, json, System.Text.Encoding.UTF8);
+
+            StatusText = $"已成功导出 {drops.Count} 个 NPC 的掉落数据到 {Path.GetFileName(dlg.FileName)}";
+            MessageBox.Show(StatusText, "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"导出时出错:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText = "导出失败";
         }
         finally
         {
