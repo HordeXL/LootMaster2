@@ -170,8 +170,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool ShowNpcIdColumn { get => _showNpcIdColumn; set => Set(ref _showNpcIdColumn, value); }
     public bool ShowNpcNameColumn { get => _showNpcNameColumn; set => Set(ref _showNpcNameColumn, value); }
     public UIStrings UI { get => _ui; private set => Set(ref _ui, value); }
-    public int Language { get => _language; set => Set(ref _language, value); }
-    public string LanguageLabel => _language == 0 ? "RU" : (_language == 1 ? "EN" : "ZH");
+    public int Language 
+    { 
+        get => _language; 
+        set 
+        { 
+            if (Set(ref _language, value))
+            {
+                ApplyLanguageChange();
+            }
+        } 
+    }
 
     public ItemRow? SelectedItem
     {
@@ -660,11 +669,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private void ToggleLanguage()
     {
         _language = (_language + 1) % 3; // 0=RU → 1=EN → 2=ZH → 0=RU
+        ApplyLanguageChange();
+    }
+
+    private void ApplyLanguageChange()
+    {
         _ui = new UIStrings(_language);
         _colSvc.SaveLanguage(_language);
 
-        OnPropertyChanged(nameof(Language));
-        OnPropertyChanged(nameof(LanguageLabel));
         OnPropertyChanged(nameof(UI));
         OnPropertyChanged(nameof(NpcListLabelText));
         OnPropertyChanged(nameof(NpcDetailLabelText));

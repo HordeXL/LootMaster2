@@ -72,11 +72,14 @@
                            ToolTip="{Binding UI.ShowNpcNamesTip}"
                            VerticalAlignment="Center" Margin="4,0"/>
                 <Separator/>
-                <Button Content="{Binding LanguageLabel}"
-                        Command="{Binding ToggleLanguageCommand}"
-                        Style="{StaticResource ToolbarButton}"
-                        ToolTip="{Binding UI.LangTip}"
-                        FontWeight="Bold" MinWidth="36"/>
+                <ComboBox Width="60" 
+                          SelectedIndex="{Binding Language, Mode=TwoWay}"
+                          ToolTip="{Binding UI.LangTip}"
+                          VerticalAlignment="Center" Margin="4,0">
+                    <ComboBoxItem Content="RU"/>
+                    <ComboBoxItem Content="EN"/>
+                    <ComboBoxItem Content="ZH"/>
+                </ComboBox>
             </ToolBar>
         </ToolBarTray>
 
