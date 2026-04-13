@@ -271,8 +271,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Выбери SQLite базу (предметы, NPC, категории)",
-            Filter = "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|Все файлы|*.*"
+            Title = _ui.OpenDbDialogTitle,
+            Filter = _ui.OpenDbDialogFilter
         };
         if (dlg.ShowDialog() != true) return;
         _progress.DbPath = dlg.FileName;
@@ -284,8 +284,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Выбери SQLite базу лута (loots, loot_groups, loot_pack_dropping_npcs)",
-            Filter = "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|Все файлы|*.*"
+            Title = _ui.OpenLootDbDialogTitle,
+            Filter = _ui.OpenLootDbDialogFilter
         };
         if (dlg.ShowDialog() != true) return;
         _progress.LootDbPath = dlg.FileName;
@@ -297,15 +297,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Выбери JSON файл(ы) дропа",
-            Filter = "JSON (*.json)|*.json|Все файлы|*.*",
+            Title = _ui.OpenJsonDialogTitle,
+            Filter = _ui.OpenJsonDialogFilter,
             Multiselect = true
         };
         if (dlg.ShowDialog() != true) return;
 
         if (string.IsNullOrEmpty(_progress.DbPath) || !File.Exists(_progress.DbPath))
         {
-            MessageBox.Show("Сначала выбери SQLite базу.", "Нет базы", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(_ui.MsgNoDbSelected, _ui.DialogTitleNoDb, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -340,13 +340,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             if (parseResult.SkippedFiles.Count > 0)
                 MessageBox.Show(
-                    $"Пропущены файлы (не является массивом JSON):\n{string.Join('\n', parseResult.SkippedFiles)}",
-                    "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _ui.MsgSkippedFiles(string.Join('\n', parseResult.SkippedFiles)),
+                    _ui.DialogTitleWarning, MessageBoxButton.OK, MessageBoxImage.Warning);
 
             var itemIds = parseResult.ItemToNpcs.Keys.OrderBy(x => x).ToList();
             var npcIds = parseResult.NpcToItems.Keys.OrderBy(x => x).ToList();
 
-            StatusText = $"JSON: {itemIds.Count} предметов, {npcIds.Count} NPC. Загружаем имена…";
+            StatusText = _ui.MsgJsonLoaded(itemIds.Count, npcIds.Count);
 
             var dbSvc = new DatabaseService(dbPath, EffectiveLootDbPath, _language);
 
@@ -361,10 +361,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             bool lootMissing = _itemsData.Values.All(i => i.LootPackIds.Count == 0 && i.DbGroup == null);
             if (lootMissing && _itemsData.Count > 0 && string.IsNullOrEmpty(_progress.LootDbPath))
                 MessageBox.Show(
-                    "Лут-таблицы (loots, loot_pack_dropping_npcs) не найдены в основной базе.\n\n" +
-                    "Если они находятся в отдельном файле (например compact.server.table.sqlite3),\n" +
-                    "нажми кнопку «Открыть БД лута» на панели инструментов.",
-                    "Нет данных лута", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _ui.MsgLootTablesMissing,
+                    _ui.DialogTitleNoLootData, MessageBoxButton.OK, MessageBoxImage.Warning);
 
             // 4. Populate rows on UI thread
             foreach (var id in _itemsData.Keys.OrderBy(x => x))
@@ -391,7 +389,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка загрузки:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{_ui.MsgLoadError}:\n{ex.Message}", _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusLoadError;
         }
         finally
@@ -593,14 +591,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         if (candidates.Count == 0)
         {
-            MessageBox.Show("Нет предметов с данными из БД, у которых ещё не задана группа предмета.",
-                "Применить из БД", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(_ui.MsgNoItemsWithDbData,
+                _ui.DialogTitleApplyFromDb, MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         var result = MessageBox.Show(
-            $"Применить Группу (БД) и Шанс (БД) как item-level значения для {candidates.Count} предмет(ов)?",
-            "Применить из БД", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            _ui.MsgApplyFromDbConfirm(candidates.Count),
+            _ui.DialogTitleApplyFromDb, MessageBoxButton.OKCancel, MessageBoxImage.Question);
         if (result != MessageBoxResult.OK) return;
 
         foreach (var row in candidates)
@@ -779,7 +777,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         for (int i = 0; i <= start; i++)
             if (!rows[i].IsProcessed) { SelectedItem = rows[i]; ScrollIntoViewRequested?.Invoke(rows[i]); return; }
 
-        MessageBox.Show("Необработанных предметов больше нет.", "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(_ui.MsgNoUnprocessedItems, _ui.DialogTitleDone, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void JumpToSelectedNpcItem()
@@ -821,7 +819,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка сохранения:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{_ui.MsgSaveError}:\n{ex.Message}", _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -837,9 +835,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var dlg = new SaveFileDialog
         {
-            Title = "Сохранить результат",
+            Title = _ui.SaveResultDialogTitle,
             DefaultExt = ".json",
-            Filter = "JSON (*.json)|*.json|Все файлы|*.*"
+            Filter = _ui.SaveResultDialogFilter
         };
         if (dlg.ShowDialog() != true) return;
 
@@ -854,7 +852,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка экспорта:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{_ui.MsgExportError}:\n{ex.Message}", _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -887,17 +885,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при анализе БД:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{_ui.MsgDbAnalysisError}:\n{ex.Message}", _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusWriteError;
             return;
         }
 
         var confirm = MessageBox.Show(
-            $"Будет обновлено:\n" +
-            $"  loots:       обновить {preview.ToUpdate}, добавить {preview.ToInsert}\n" +
-            $"  loot_groups: обновить {preview.LootGroupRows}\n\n" +
-            $"Продолжить?",
-            "Запись в БД", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            _ui.MsgSyncConfirm(preview.ToUpdate.ToString(), preview.ToInsert.ToString(), preview.LootGroupRows.ToString()),
+            _ui.DialogTitleWriteToDb, MessageBoxButton.YesNo, MessageBoxImage.Question);
 
         if (confirm != MessageBoxResult.Yes) { StatusText = _ui.StatusWriteCancelled; return; }
 
@@ -910,7 +905,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка записи в БД:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{_ui.MsgWriteDbError}:\n{ex.Message}", _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusWriteError;
         }
         finally
@@ -923,16 +918,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Выбери SQL файл(ы) для импорта",
-            Filter = "SQL files (*.sql)|*.sql|All files (*.*)|*.*",
+            Title = _ui.OpenSqlDialogTitle,
+            Filter = _ui.OpenSqlDialogFilter,
             Multiselect = true,
         };
         if (dlg.ShowDialog() != true) return;
 
         var fileList = string.Join("\n", dlg.FileNames.Select(Path.GetFileName));
         var confirm = MessageBox.Show(
-            $"Выполнить SQL-инструкции из {dlg.FileNames.Length} файл(а/ов):\n{fileList}\n\nЭто изменит базу данных. Продолжить?",
-            "Импорт SQL", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            _ui.IsRussian
+                ? $"Выполнить SQL-инструкции из {dlg.FileNames.Length} файл(а/ов):\n{fileList}\n\nЭто изменит базу данных. Продолжить?"
+                : _ui.IsRussian == false && _language == 2
+                    ? $"从 {dlg.FileNames.Length} 个文件中执行SQL指令:\n{fileList}\n\n这将修改数据库。是否继续?"
+                    : $"Execute SQL statements from {dlg.FileNames.Length} file(s):\n{fileList}\n\nThis will modify the database. Continue?",
+            _ui.DialogTitleImportSql, MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (confirm != MessageBoxResult.Yes) return;
 
         IsLoading = true;
@@ -960,18 +959,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
             StatusText = _ui.StatusImportDone(totalInserted, totalUpdated);
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"Импорт завершён успешно ({dlg.FileNames.Length} файл(а/ов)).");
+            sb.AppendLine(_ui.MsgImportSqlSuccess(dlg.FileNames.Length));
             sb.AppendLine();
-            sb.AppendLine($"Добавлено:  {totalInserted}");
-            sb.AppendLine($"Обновлено:  {totalUpdated}");
+            sb.AppendLine($"{_ui.MsgImportSqlAdded}:  {totalInserted}");
+            sb.AppendLine($"{_ui.MsgImportSqlUpdated}:  {totalUpdated}");
             if (totalOther > 0)
-                sb.AppendLine($"Прочих:     {totalOther}");
-            sb.AppendLine($"Итого:      {totalInserted + totalUpdated + totalOther}");
-            MessageBox.Show(sb.ToString(), "Импорт SQL", MessageBoxButton.OK, MessageBoxImage.Information);
+                sb.AppendLine($"{_ui.MsgImportSqlOther}:     {totalOther}");
+            sb.AppendLine($"{_ui.MsgImportSqlTotal}:      {totalInserted + totalUpdated + totalOther}");
+            MessageBox.Show(sb.ToString(), _ui.DialogTitleImportSql, MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка импорта SQL:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{_ui.MsgImportSqlError}:\n{ex.Message}", _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             StatusText = _ui.StatusImportError;
         }
         finally
@@ -1042,16 +1041,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrEmpty(EffectiveLootDbPath) || !File.Exists(EffectiveLootDbPath))
         {
-            MessageBox.Show("请先打开掉落数据库。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(_ui.ExtractNpcNoDbWarning, _ui.ExtractNpcWarningTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         var dlg = new SaveFileDialog
         {
-            Title = "保存 NPC 掉落数据",
+            Title = _ui.ExtractNpcTitle,
             DefaultExt = ".json",
-            Filter = "JSON (*.json)|*.json|所有文件|*.*",
-            FileName = "npc_drops.json"
+            Filter = _ui.ExtractNpcFilter,
+            FileName = _ui.ExtractNpcDefaultFile
         };
 
         if (dlg.ShowDialog() != true) return;
@@ -1065,8 +1064,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             if (drops.Count == 0)
             {
-                MessageBox.Show("数据库中未找到 NPC 掉落记录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-                StatusText = "提取完成：未找到数据";
+                MessageBox.Show(_ui.ExtractNpcNoDataInfo, _ui.ExtractNpcInfoTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText = _ui.ExtractNpcNoDataStatus;
                 return;
             }
 
@@ -1080,13 +1079,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var json = System.Text.Json.JsonSerializer.Serialize(drops, jsonOptions);
             await File.WriteAllTextAsync(dlg.FileName, json, System.Text.Encoding.UTF8);
 
-            StatusText = $"已成功导出 {drops.Count} 个 NPC 的掉落数据到 {Path.GetFileName(dlg.FileName)}";
-            MessageBox.Show(StatusText, "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+            StatusText = _ui.ExtractNpcSuccess(Path.GetFileName(dlg.FileName), drops.Count);
+            MessageBox.Show(StatusText, _ui.ExtractNpcSuccessTitle, MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"导出时出错:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText = "导出失败";
+            MessageBox.Show($"{_ui.ExtractNpcErrorMsg}:\n{ex.Message}", _ui.ExtractNpcErrorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText = _ui.ExtractNpcFailedStatus;
         }
         finally
         {
@@ -1146,7 +1145,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         return cp;
     }
 
-    private static bool TryParseGroupChance(
+    private bool TryParseGroupChance(
         string groupText, string chanceText,
         out int? group, out double? chance)
     {
@@ -1160,7 +1159,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             if (!int.TryParse(groupText, out int g))
             {
-                MessageBox.Show("Группа должна быть целым числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(_ui.MsgGroupMustBeInteger, _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             group = g;
@@ -1171,7 +1170,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (!double.TryParse(chanceText, System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out double c))
             {
-                MessageBox.Show("Шанс должен быть числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(_ui.MsgChanceMustBeNumber, _ui.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             chance = c;

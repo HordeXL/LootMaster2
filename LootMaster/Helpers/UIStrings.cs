@@ -403,4 +403,104 @@ public sealed class UIStrings
         _lang == 0 ? $"Импорт из БД завершён. Добавлено: {ins}, обновлено: {upd}"
             : _lang == 1 ? $"DB import done. Inserted: {ins}, updated: {upd}"
             : $"数据库导入完成. 已插入: {ins}, 已更新: {upd}";
+
+    // ── Extract NPC Drops ─────────────────────────────────────────────────────
+
+    public string ExtractNpcTitle          => T("Сохранить данные дропа NPC", "Save NPC Drop Data", "保存NPC掉落数据");
+    public string ExtractNpcFilter         => T("JSON (*.json)|*.json|Все файлы|*.*", "JSON (*.json)|*.json|All files|*.*", "JSON (*.json)|*.json|所有文件|*.*");
+    public string ExtractNpcDefaultFile    => "npc_drops.json";
+    public string ExtractNpcNoDbWarning    => T("Сначала откройте базу данных лута.", "Please open loot database first.", "请先打开掉落数据库。");
+    public string ExtractNpcNoDataInfo     => T("В базе данных не найдены записи о дропе NPC.", "No NPC drop records found in database.", "数据库中未找到NPC掉落记录。");
+    public string ExtractNpcNoDataStatus   => T("Извлечение завершено: данные не найдены", "Extraction complete: no data found", "提取完成：未找到数据");
+    public string ExtractNpcSuccess(string fileName, int count) =>
+        _lang == 0 ? $"Успешно экспортированы данные дропа {count} NPC в {fileName}"
+            : _lang == 1 ? $"Successfully exported drop data for {count} NPCs to {fileName}"
+            : $"已成功导出{count}个NPC的掉落数据到{fileName}";
+    public string ExtractNpcSuccessTitle   => T("Успех", "Success", "成功");
+    public string ExtractNpcErrorTitle     => T("Ошибка экспорта", "Export Error", "导出错误");
+    public string ExtractNpcErrorMsg       => T("Произошла ошибка при экспорте", "An error occurred during export", "导出时出错");
+    public string ExtractNpcFailedStatus   => T("Экспорт не удался", "Export failed", "导出失败");
+    public string ExtractNpcWarningTitle   => T("Предупреждение", "Warning", "警告");
+    public string ExtractNpcInfoTitle      => T("Информация", "Info", "信息");
+
+    // ── Common Dialog Titles ──────────────────────────────────────────────────
+
+    public string DialogTitleWarning       => T("Предупреждение", "Warning", "警告");
+    public string DialogTitleError         => T("Ошибка", "Error", "错误");
+    public string DialogTitleInfo          => T("Информация", "Information", "信息");
+    public string DialogTitleSuccess       => T("Успех", "Success", "成功");
+    public string DialogTitleQuestion      => T("Вопрос", "Question", "询问");
+    public string DialogTitleNoDb          => T("Нет базы", "No Database", "没有数据库");
+    public string DialogTitleNoLootData    => T("Нет данных лута", "No Loot Data", "没有战利品数据");
+    public string DialogTitleWriteToDb     => T("Запись в БД", "Write to DB", "写入数据库");
+    public string DialogTitleImportSql     => T("Импорт SQL", "SQL Import", "SQL导入");
+    public string DialogTitleApplyFromDb   => T("Применить из БД", "Apply from DB", "从数据库应用");
+    public string DialogTitleUndoDbApply   => T("Отменить из БД", "Undo DB Apply", "撤销数据库应用");
+    public string DialogTitleNothingToWrite => T("Нечего записывать", "Nothing to Write", "没有可写入的内容");
+    public string DialogTitleDone          => T("Готово", "Done", "完成");
+
+    // ── Open File Dialogs ─────────────────────────────────────────────────────
+
+    public string OpenDbDialogTitle        => T("Выбери SQLite базу (предметы, NPC, категории)", "Select SQLite DB (items, NPCs, categories)", "选择SQLite数据库 (物品、NPC、分类)");
+    public string OpenDbDialogFilter       => T("SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|Все файлы|*.*", "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|All files|*.*", "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|所有文件|*.*");
+    public string OpenLootDbDialogTitle    => T("Выбери SQLite базу лута (loots, loot_groups, loot_pack_dropping_npcs)", "Select SQLite loot DB (loots, loot_groups, loot_pack_dropping_npcs)", "选择SQLite战利品数据库 (loots, loot_groups, loot_pack_dropping_npcs)");
+    public string OpenLootDbDialogFilter   => T("SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|Все файлы|*.*", "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|All files|*.*", "SQLite (*.sqlite3;*.db)|*.sqlite3;*.db|所有文件|*.*");
+    public string OpenJsonDialogTitle      => T("Выбери JSON файл(ы) дропа", "Select drop JSON file(s)", "选择掉落JSON文件");
+    public string OpenJsonDialogFilter     => T("JSON (*.json)|*.json|Все файлы|*.*", "JSON (*.json)|*.json|All files|*.*", "JSON (*.json)|*.json|所有文件|*.*");
+    public string OpenSqlDialogTitle       => T("Выбери SQL файл(ы) для импорта", "Select SQL file(s) for import", "选择要导入的SQL文件");
+    public string OpenSqlDialogFilter      => T("SQL files (*.sql)|*.sql|All files (*.*)|*.*", "SQL files (*.sql)|*.sql|All files (*.*)|*.*", "SQL文件 (*.sql)|*.sql|所有文件 (*.*)|*.*");
+    public string SaveResultDialogTitle    => T("Сохранить результат", "Save Result", "保存结果");
+    public string SaveResultDialogFilter   => T("JSON (*.json)|*.json|Все файлы|*.*", "JSON (*.json)|*.json|All files|*.*", "JSON (*.json)|*.json|所有文件|*.*");
+
+    // ── MessageBox Texts ──────────────────────────────────────────────────────
+
+    public string MsgNoDbSelected          => T("Сначала выбери SQLite базу.", "Please select SQLite database first.", "请先选择SQLite数据库。");
+    public string MsgLoadError             => T("Ошибка загрузки", "Load error", "加载错误");
+    public string MsgNoUnprocessedItems    => T("Необработанных предметов больше нет.", "No more unprocessed items.", "没有更多未处理的物品。");
+    public string MsgSaveError             => T("Ошибка сохранения", "Save error", "保存错误");
+    public string MsgExportError           => T("Ошибка экспорта", "Export error", "导出错误");
+    public string MsgDbAnalysisError       => T("Ошибка при анализе БД", "Database analysis error", "数据库分析错误");
+    public string MsgSyncConfirm(string toUpdate, string toInsert, string lootGroupRows) =>
+        _lang == 0 ? $"Будет обновлено:\n  loots:       обновить {toUpdate}, добавить {toInsert}\n  loot_groups: обновить {lootGroupRows}\n\nПродолжить?"
+            : _lang == 1 ? $"Will update:\n  loots:       update {toUpdate}, insert {toInsert}\n  loot_groups: update {lootGroupRows}\n\nContinue?"
+            : $"将更新:\n  loots:       更新 {toUpdate}, 插入 {toInsert}\n  loot_groups: 更新 {lootGroupRows}\n\n是否继续?";
+    public string MsgWriteDbError          => T("Ошибка записи в БД", "Database write error", "数据库写入错误");
+    public string MsgImportSqlSuccess(int fileCount) =>
+        _lang == 0 ? $"Импорт завершён успешно ({fileCount} файл(а/ов))."
+            : _lang == 1 ? $"Import completed successfully ({fileCount} file(s))."
+            : $"导入成功完成 ({fileCount} 个文件)。";
+    public string MsgImportSqlAdded        => T("Добавлено", "Added", "已添加");
+    public string MsgImportSqlUpdated      => T("Обновлено", "Updated", "已更新");
+    public string MsgImportSqlOther        => T("Прочих", "Other", "其他");
+    public string MsgImportSqlTotal        => T("Итого", "Total", "总计");
+    public string MsgImportSqlError        => T("Ошибка импорта SQL", "SQL import error", "SQL导入错误");
+    public string MsgLootTablesMissing     => T("Лут-таблицы (loots, loot_pack_dropping_npcs) не найдены в основной базе.\n\n" +
+                                                "Если они находятся в отдельном файле (например compact.server.table.sqlite3),\n" +
+                                                "нажми кнопку «Открыть БД лута» на панели инструментов.",
+                                                "Loot tables (loots, loot_pack_dropping_npcs) not found in main database.\n\n" +
+                                                "If they are in a separate file (e.g., compact.server.table.sqlite3),\n" +
+                                                "click the 'Open Loot DB' button on the toolbar.",
+                                                "主数据库中未找到战利品表 (loots, loot_pack_dropping_npcs)。\n\n" +
+                                                "如果它们在单独的文件中 (例如 compact.server.table.sqlite3)，\n" +
+                                                "请点击工具栏上的'打开战利品数据库'按钮。");
+    public string MsgNoItemsWithDbData     => T("Нет предметов с данными из БД, у которых ещё не задана группа предмета.",
+                                                "No items with DB data that don't have an item group set yet.",
+                                                "没有尚未设置物品组的数据库数据物品。");
+    public string MsgApplyFromDbConfirm(int count) =>
+        _lang == 0 ? $"Применить Группу (БД) и Шанс (БД) как item-level значения для {count} предмет(ов)?"
+            : _lang == 1 ? $"Apply Group (DB) and Chance (DB) as item-level values for {count} item(s)?"
+            : $"将组 (数据库) 和几率 (数据库) 作为物品级值应用于 {count} 个物品?";
+    public string MsgGroupMustBeInteger    => T("Группа должна быть целым числом.", "Group must be an integer.", "组必须是整数。");
+    public string MsgChanceMustBeNumber    => T("Шанс должен быть числом.", "Chance must be a number.", "几率必须是数字。");
+    public string MsgSkippedFiles(string files) =>
+        _lang == 0 ? $"Пропущены файлы (не является массивом JSON):\n{files}"
+            : _lang == 1 ? $"Skipped files (not a JSON array):\n{files}"
+            : $"跳过的文件 (不是JSON数组):\n{files}";
+    public string MsgJsonLoaded(int items, int npcs) =>
+        _lang == 0 ? $"JSON: {items} предметов, {npcs} NPC. Загружаем имена…"
+            : _lang == 1 ? $"JSON: {items} items, {npcs} NPCs. Loading names…"
+            : $"JSON: {items} 个物品, {npcs} 个NPC. 正在加载名称…";
+    public string MsgNoItemsWithAssignedGroup => T("Нет предметов с назначенными группой и шансом.",
+                                                    "No items with assigned group and chance.",
+                                                    "没有已分配组和几率的物品。");
 }
